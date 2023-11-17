@@ -1,0 +1,1733 @@
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+      name:  <unnamed>
+       log:  C:\Users\CornoL\Dropbox\Lapa-Lapa\LuciaElianaGiacomo\logistics\03_data\04_final_data\output\prova.log
+  log type:  text
+ opened on:   1 Mar 2019, 15:46:42
+
+. do "C:\Users\CornoL\AppData\Local\Temp\STD2c1c_000000.tmp"
+
+. ***¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
+. ***   RANDOMIZATION WITH STRATIFICATION                                     
+. ***_____________________________________________________________________________
+. 
+. 
+. 
+. clear all
+
+. 
+. set more off
+
+. pause on
+
+. 
+. ***¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
+. ***   0 - Parameters                                               
+. ***_____________________________________________________________________________
+. 
+. ** Install packages
+. *ssc install randomize
+. *ssc install nearstat
+. *ssc install listtex
+. *ssc intall orth_out
+. 
+. 
+. *Lucia User
+. global main "C:\Users\CornoL\Dropbox\Lapa-Lapa\LuciaElianaGiacomo\logistics\03_data/04_final_data"
+
+. 
+. 
+. *global main "/Users/giacomobattiston/Dropbox/Lapa-Lapa/LuciaElianaGiacomo/logistics/03_data/04_final_data"
+. *global main "C:\Users\BattistonG\Dropbox\Lapa-Lapa\LuciaElianaGiacomo\logistics\03_data\04_final_data"
+. local lycee "$main/raw/lycee_conakry.xlsx"
+
+. 
+. 
+. 
+. 
+. 
+. 
+. ***¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
+. ***   1 - Importing the data                                               
+. ***_____________________________________________________________________________
+. 
+. 
+. import excel using "`lycee'", firstrow clear
+
+. keep N etab nb_student_at_randomiz_date latitude longitude
+
+. destring latitude, replace
+latitude: all characters numeric; replaced as double
+(152 missing values generated)
+
+. destring longitude, replace
+longitude: all characters numeric; replaced as double
+(152 missing values generated)
+
+. drop if N==.
+(149 observations deleted)
+
+. tempfile lycee
+
+. save `lycee', replace
+(note: file C:\Users\CornoL\AppData\Local\Temp\ST_2c1c_000001.tmp not found)
+file C:\Users\CornoL\AppData\Local\Temp\ST_2c1c_000001.tmp saved
+
+. 
+. 
+. use "$main/output/admin_data", clear
+
+. keep N CODE NOM_ETABLISSEMENT etab_quest etab commune libelle_dsee status nature fee_11_a fee_11_b fee_12_a fee_12_b fee_Term_a fee_Term_b nb_GP
+
+. merge 1:1 etab N using `lycee'
+(note: variable etab was str27, now str36 to accommodate using data's values)
+
+    Result                           # of obs.
+    -----------------------------------------
+    not matched                           170
+        from master                         0  (_merge==1)
+        from using                        170  (_merge==2)
+
+    matched                               160  (_merge==3)
+    -----------------------------------------
+
+. rename etab_quest lycee_name_string
+
+. keep if _merge==3
+(170 observations deleted)
+
+. drop _merge
+
+. 
+. *merging with student questionnaire
+. merge 1:m lycee_name_string using "$main/output/questionnaire_baseline_clean_rigourous_cleaning.dta"
+
+    Result                           # of obs.
+    -----------------------------------------
+    not matched                             0
+    matched                             7,398  (_merge==3)
+    -----------------------------------------
+
+. keep if _merge==3
+(0 observations deleted)
+
+. drop _merge
+
+. 
+. *gen code for units of treatment
+. rename CODE schoolid
+
+. label var schoolid "id school number"
+
+. 
+. drop note*
+
+. 
+. 
+. 
+. ***¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
+. ***   2 - covariates  cleaning                          
+. ***_____________________________________________________________________________
+. 
+. //SOCIO ECONOMIC CONTROLS/
+. 
+. *mother ever attended school
+.                 gen moth_school = .
+(7,398 missing values generated)
+
+.                 replace moth_school = 1 if sec1_5 == 1
+(3,291 real changes made)
+
+.                 replace moth_school = 0 if sec1_5 == 2
+(4,099 real changes made)
+
+. 
+. *father ever attended school
+.                 gen fath_school = .
+(7,398 missing values generated)
+
+.                 replace fath_school = 1 if sec1_12 == 1
+(4,467 real changes made)
+
+.                 replace fath_school = 0 if sec1_12 == 2
+(2,922 real changes made)
+
+.                 
+. *school size 
+.                 rename nb_student_at_randomiz_date size
+
+. *gender
+.                 rename sec0_q2 gender
+
+.                 replace gender=0 if gender==2
+(3,585 real changes made)
+
+. 
+. *generating age
+.                 gen age=(starttime_new_date-sec0_q3)/365.25
+(2 missing values generated)
+
+.                 label variable age "Age"
+
+.                 *dealing with aberrant data : 
+.                 replace age=. if age<=10 | age >30
+(477 real changes made, 477 to missing)
+
+. 
+. 
+. * family size
+.                 gen family_size=no_family_member
+(9 missing values generated)
+
+.                 *replace family_size=. if family_size > 100
+. 
+. 
+. *ethnicity
+.                 gen ethnicity=.
+(7,398 missing values generated)
+
+.                 replace ethnicity=1 if sec0_q11==3
+(2,705 real changes made)
+
+.                 replace ethnicity=2 if sec0_q11==1
+(1,926 real changes made)
+
+.                 replace ethnicity=3 if sec0_q11==2
+(1,720 real changes made)
+
+.                 replace ethnicity=4 if sec0_q11!=1 & sec0_q11!=2 & sec0_q11!=3
+(1,047 real changes made)
+
+. 
+. * generating 3 dummies for the three mainlanguage
+.                 gen pular_language=.
+(7,398 missing values generated)
+
+.                 replace pular_language=1 if sec0_q11==3
+(2,705 real changes made)
+
+.                 replace pular_language=0 if sec0_q11!=3 & !missing(sec0_q11==3)
+(4,693 real changes made)
+
+. 
+.                 gen sousou_language=.
+(7,398 missing values generated)
+
+.                 replace sousou_language=1 if sec0_q11==1
+(1,926 real changes made)
+
+.                 replace sousou_language=0 if sec0_q11!=1 & !missing(sec0_q11==1)
+(5,472 real changes made)
+
+. 
+.                 gen malinke_language=.
+(7,398 missing values generated)
+
+.                 replace malinke_language=1 if sec0_q11==2
+(1,720 real changes made)
+
+.                 replace malinke_language=0 if sec0_q11!=2 & !missing(sec0_q11==2)
+(5,678 real changes made)
+
+. 
+. 
+. *classmates migration
+.                 rename sec9_q2 mig_classmates
+
+. 
+. *outside contact no
+.                 *replace outside_contact_no=. if outside_contact_no>100 
+. 
+. 
+. // MAIN OUTCOMES
+. *migration desire
+.                 rename sec2_q1 mig_des
+
+.                 replace mig_des=0 if mig_des==2
+(5,183 real changes made)
+
+. 
+. 
+. *generating dummy for road selection
+.                 gen it_favorite_road=.
+(7,398 missing values generated)
+
+.                 replace it_favorite_road=1 if road_selection==1
+(2,808 real changes made)
+
+.                 replace it_favorite_road=0 if road_selection!=1 & !missing(road_selection)
+(4,530 real changes made)
+
+. 
+.                 gen sp_favorite_road=.
+(7,398 missing values generated)
+
+.                 replace sp_favorite_road=1 if road_selection==2
+(3,421 real changes made)
+
+.                 replace sp_favorite_road=0 if road_selection!=2 & !missing(road_selection)
+(3,917 real changes made)
+
+.                 
+. *journey_cost
+.                 local cost "italy_journey_cost spain_journey_cost"
+
+.                 foreach var of local cost {
+  2.                 replace `var'=. if `var'<0
+  3.                 }
+(1 real change made, 1 to missing)
+(1 real change made, 1 to missing)
+
+. 
+. *journey_duration
+.                 local duration "italy_duration spain_duration"
+
+.                 foreach var of local duration {
+  2.                 replace `var'=. if `var'<0
+  3. 
+. }
+(5 real changes made, 5 to missing)
+(4 real changes made, 4 to missing)
+
+. 
+. *employment
+.                 replace sec3_32=. if sec3_32 > 100
+(0 real changes made)
+
+.                 rename sec3_32 employed
+
+. 
+. rename sec3_35 studies
+
+. replace studies=. if studies>100
+(1 real change made, 1 to missing)
+
+. 
+. rename sec3_40 asylum
+
+. rename sec3_41 fav_mig
+
+. replace fav_mig=. if fav_mig>100
+(23 real changes made, 23 to missing)
+
+. 
+. replace outside_contact_no=. if outside_contact_no>1000
+(24 real changes made, 24 to missing)
+
+. 
+. *log wage
+. gen log_wage=log(expectation_wage+1)
+(86 missing values generated)
+
+. 
+. *family revenue
+. rename sec8_q6 family_revenue
+
+. 
+. gen     duration=.
+(7,398 missing values generated)
+
+. replace duration=(italy_duration+spain_duration)/2
+(7,369 real changes made)
+
+. 
+. gen     beaten=.
+(7,398 missing values generated)
+
+. replace beaten=(italy_beaten+spain_beaten)/2
+(7,358 real changes made)
+
+. 
+. gen     journey_cost=.
+(7,398 missing values generated)
+
+. replace journey_cost=(spain_journey_cost+italy_journey_cost)/2
+(7,312 real changes made)
+
+. 
+. gen     die_boat=.
+(7,398 missing values generated)
+
+. replace die_boat=(spain_die_boat+italy_die_boat)/2
+(7,348 real changes made)
+
+. 
+. gen     die_bef_boat=.
+(7,398 missing values generated)
+
+. replace die_bef_boat=(spain_die_bef_boat+italy_die_bef_boat)/2
+(7,351 real changes made)
+
+. 
+. gen             forced_work=.
+(7,398 missing values generated)
+
+. replace forced_work=(spain_forced_work+italy_forced_work)/2
+(7,356 real changes made)
+
+. 
+. gen     mig_plan=sec2_q4
+(5,194 missing values generated)
+
+. replace mig_plan=0 if mig_plan==2 | mig_des==0
+(5,899 real changes made)
+
+. 
+. gen mig_prep=sec2_q7
+(5,911 missing values generated)
+
+. replace mig_prep=0 if mig_prep==2 | mig_plan==0
+(6,983 real changes made)
+
+. 
+. //DHS Index
+. *generating the  dummy variables for categorical var (toilet, water)
+. *notice that it is also possible to split the categories into 3 subgroup : low/medium/high quality
+. tab sec7_q5 , gen(sec7_q5_n)
+
+ What type of toilet does the household |
+                                   use? |      Freq.     Percent        Cum.
+----------------------------------------+-----------------------------------
+            Douche avec pot � la maison |      4,108       58.34       58.34
+        Douche avec pot dans la latrine |      1,879       26.68       85.02
+             Douche avec pot dans le WC |        733       10.41       95.43
+Fosse d�aisance sans dalle/trou ouvert  |        117        1.66       97.09
+Fosse d�aisance sans dalle/trou ouvert  |        138        1.96       99.05
+Fosse d�aisance sans dalle/trou ouvert  |         42        0.60       99.64
+        No facility, Bush, Field, Beach |         25        0.36      100.00
+----------------------------------------+-----------------------------------
+                                  Total |      7,042      100.00
+
+. tab sec7_q4 , gen(sec7_q4_n)
+
+    What is the MAIN source of drinking |
+              water for the household ? |      Freq.     Percent        Cum.
+----------------------------------------+-----------------------------------
+                       Tap in the house |      3,129       44.38       44.38
+                              Yard taps |      1,108       15.72       60.10
+                  Public tap /  Fontain |        227        3.22       63.32
+               Tap in neighboor's house |        441        6.26       69.57
+                               Borehole |      1,189       16.87       86.44
+                                   Well |        176        2.50       88.94
+                          Bottled water |        145        2.06       90.99
+                   Plastic bag of water |        464        6.58       97.57
+                             Rain water |         25        0.35       97.93
+                           Tanker-truck |         16        0.23       98.16
+            Cart with small tank / drum |         10        0.14       98.30
+Surface water (river, stream, dam, lake |         24        0.34       98.64
+                      Water from spring |         68        0.96       99.60
+                                  Other |         28        0.40      100.00
+----------------------------------------+-----------------------------------
+                                  Total |      7,050      100.00
+
+. local component "sec7_q4_n1 sec7_q4_n2 sec7_q4_n3 sec7_q4_n4 sec7_q4_n5 sec7_q4_n6 sec7_q4_n7 sec7_q4_n8 sec7_q4_n9 sec7_q4_n10 sec7_q4_n11 sec7_q4_n12 sec7_q4_n13 sec7_q4_n14 sec7_q5_n1 sec7_q5_n2 sec7_q5_n3 sec7_q5_n4 sec7_q5_n5 sec7_q5_n6 sec7_q5_n7 
+> sec7_q6_a sec7_q6_b sec7_q6_c sec7_q6_d sec7_q6_f sec7_q6_g sec7_q6_h sec7_q6_i sec7_q6_j sec7_q6_k sec7_q6_l sec7_q6_m"
+
+. 
+. * deleting variable without no variation    
+. foreach var of local component {
+  2. sum `var'
+  3. }
+
+    Variable |        Obs        Mean    Std. Dev.       Min        Max
+-------------+---------------------------------------------------------
+  sec7_q4_n1 |      7,050    .4438298    .4968701          0          1
+
+    Variable |        Obs        Mean    Std. Dev.       Min        Max
+-------------+---------------------------------------------------------
+  sec7_q4_n2 |      7,050    .1571631    .3639803          0          1
+
+    Variable |        Obs        Mean    Std. Dev.       Min        Max
+-------------+---------------------------------------------------------
+  sec7_q4_n3 |      7,050    .0321986    .1765397          0          1
+
+    Variable |        Obs        Mean    Std. Dev.       Min        Max
+-------------+---------------------------------------------------------
+  sec7_q4_n4 |      7,050    .0625532    .2421747          0          1
+
+    Variable |        Obs        Mean    Std. Dev.       Min        Max
+-------------+---------------------------------------------------------
+  sec7_q4_n5 |      7,050    .1686525    .3744712          0          1
+
+    Variable |        Obs        Mean    Std. Dev.       Min        Max
+-------------+---------------------------------------------------------
+  sec7_q4_n6 |      7,050    .0249645    .1560281          0          1
+
+    Variable |        Obs        Mean    Std. Dev.       Min        Max
+-------------+---------------------------------------------------------
+  sec7_q4_n7 |      7,050    .0205674    .1419409          0          1
+
+    Variable |        Obs        Mean    Std. Dev.       Min        Max
+-------------+---------------------------------------------------------
+  sec7_q4_n8 |      7,050    .0658156    .2479771          0          1
+
+    Variable |        Obs        Mean    Std. Dev.       Min        Max
+-------------+---------------------------------------------------------
+  sec7_q4_n9 |      7,050    .0035461    .0594477          0          1
+
+    Variable |        Obs        Mean    Std. Dev.       Min        Max
+-------------+---------------------------------------------------------
+ sec7_q4_n10 |      7,050    .0022695    .0475886          0          1
+
+    Variable |        Obs        Mean    Std. Dev.       Min        Max
+-------------+---------------------------------------------------------
+ sec7_q4_n11 |      7,050    .0014184    .0376381          0          1
+
+    Variable |        Obs        Mean    Std. Dev.       Min        Max
+-------------+---------------------------------------------------------
+ sec7_q4_n12 |      7,050    .0034043    .0582507          0          1
+
+    Variable |        Obs        Mean    Std. Dev.       Min        Max
+-------------+---------------------------------------------------------
+ sec7_q4_n13 |      7,050    .0096454    .0977431          0          1
+
+    Variable |        Obs        Mean    Std. Dev.       Min        Max
+-------------+---------------------------------------------------------
+ sec7_q4_n14 |      7,050    .0039716    .0629001          0          1
+
+    Variable |        Obs        Mean    Std. Dev.       Min        Max
+-------------+---------------------------------------------------------
+  sec7_q5_n1 |      7,042     .583357    .4930377          0          1
+
+    Variable |        Obs        Mean    Std. Dev.       Min        Max
+-------------+---------------------------------------------------------
+  sec7_q5_n2 |      7,042    .2668276    .4423329          0          1
+
+    Variable |        Obs        Mean    Std. Dev.       Min        Max
+-------------+---------------------------------------------------------
+  sec7_q5_n3 |      7,042    .1040897    .3053986          0          1
+
+    Variable |        Obs        Mean    Std. Dev.       Min        Max
+-------------+---------------------------------------------------------
+  sec7_q5_n4 |      7,042    .0166146    .1278314          0          1
+
+    Variable |        Obs        Mean    Std. Dev.       Min        Max
+-------------+---------------------------------------------------------
+  sec7_q5_n5 |      7,042    .0195967    .1386196          0          1
+
+    Variable |        Obs        Mean    Std. Dev.       Min        Max
+-------------+---------------------------------------------------------
+  sec7_q5_n6 |      7,042    .0059642    .0770031          0          1
+
+    Variable |        Obs        Mean    Std. Dev.       Min        Max
+-------------+---------------------------------------------------------
+  sec7_q5_n7 |      7,042    .0035501    .0594813          0          1
+
+    Variable |        Obs        Mean    Std. Dev.       Min        Max
+-------------+---------------------------------------------------------
+   sec7_q6_a |      7,020    .9588319     .198693          0          1
+
+    Variable |        Obs        Mean    Std. Dev.       Min        Max
+-------------+---------------------------------------------------------
+   sec7_q6_b |      7,005    .7814418    .4132976          0          1
+
+    Variable |        Obs        Mean    Std. Dev.       Min        Max
+-------------+---------------------------------------------------------
+   sec7_q6_c |      7,003    .9527345    .2122213          0          1
+
+    Variable |        Obs        Mean    Std. Dev.       Min        Max
+-------------+---------------------------------------------------------
+   sec7_q6_d |      7,005    .9269094    .2603038          0          1
+
+    Variable |        Obs        Mean    Std. Dev.       Min        Max
+-------------+---------------------------------------------------------
+   sec7_q6_f |      7,000    .7955714    .4033122          0          1
+
+    Variable |        Obs        Mean    Std. Dev.       Min        Max
+-------------+---------------------------------------------------------
+   sec7_q6_g |      7,002    .5422736    .4982453          0          1
+
+    Variable |        Obs        Mean    Std. Dev.       Min        Max
+-------------+---------------------------------------------------------
+   sec7_q6_h |      6,988    .3371494    .4727702          0          1
+
+    Variable |        Obs        Mean    Std. Dev.       Min        Max
+-------------+---------------------------------------------------------
+   sec7_q6_i |      6,988    .8586148    .3484434          0          1
+
+    Variable |        Obs        Mean    Std. Dev.       Min        Max
+-------------+---------------------------------------------------------
+   sec7_q6_j |      6,988    .8846594    .3194554          0          1
+
+    Variable |        Obs        Mean    Std. Dev.       Min        Max
+-------------+---------------------------------------------------------
+   sec7_q6_k |      6,988    .3982541    .4895734          0          1
+
+    Variable |        Obs        Mean    Std. Dev.       Min        Max
+-------------+---------------------------------------------------------
+   sec7_q6_l |      6,986    .3995133    .4898334          0          1
+
+    Variable |        Obs        Mean    Std. Dev.       Min        Max
+-------------+---------------------------------------------------------
+   sec7_q6_m |      6,988    .4728105    .4992959          0          1
+
+. ///>>> ok 
+> 
+. *normalize
+. foreach var of local component {
+  2. qui sum `var'
+  3. replace `var'=(`var'-`r(mean)')/`r(sd)'
+  4. }
+variable sec7_q4_n1 was byte now float
+(7,050 real changes made)
+variable sec7_q4_n2 was byte now float
+(7,050 real changes made)
+variable sec7_q4_n3 was byte now float
+(7,050 real changes made)
+variable sec7_q4_n4 was byte now float
+(7,050 real changes made)
+variable sec7_q4_n5 was byte now float
+(7,050 real changes made)
+variable sec7_q4_n6 was byte now float
+(7,050 real changes made)
+variable sec7_q4_n7 was byte now float
+(7,050 real changes made)
+variable sec7_q4_n8 was byte now float
+(7,050 real changes made)
+variable sec7_q4_n9 was byte now float
+(7,050 real changes made)
+variable sec7_q4_n10 was byte now float
+(7,050 real changes made)
+variable sec7_q4_n11 was byte now float
+(7,050 real changes made)
+variable sec7_q4_n12 was byte now float
+(7,050 real changes made)
+variable sec7_q4_n13 was byte now float
+(7,050 real changes made)
+variable sec7_q4_n14 was byte now float
+(7,050 real changes made)
+variable sec7_q5_n1 was byte now float
+(7,042 real changes made)
+variable sec7_q5_n2 was byte now float
+(7,042 real changes made)
+variable sec7_q5_n3 was byte now float
+(7,042 real changes made)
+variable sec7_q5_n4 was byte now float
+(7,042 real changes made)
+variable sec7_q5_n5 was byte now float
+(7,042 real changes made)
+variable sec7_q5_n6 was byte now float
+(7,042 real changes made)
+variable sec7_q5_n7 was byte now float
+(7,042 real changes made)
+variable sec7_q6_a was byte now float
+(7,020 real changes made)
+variable sec7_q6_b was byte now float
+(7,005 real changes made)
+variable sec7_q6_c was byte now float
+(7,003 real changes made)
+variable sec7_q6_d was byte now float
+(7,005 real changes made)
+variable sec7_q6_f was byte now float
+(7,000 real changes made)
+variable sec7_q6_g was byte now float
+(7,002 real changes made)
+variable sec7_q6_h was byte now float
+(6,988 real changes made)
+variable sec7_q6_i was byte now float
+(6,988 real changes made)
+variable sec7_q6_j was byte now float
+(6,988 real changes made)
+variable sec7_q6_k was byte now float
+(6,988 real changes made)
+variable sec7_q6_l was byte now float
+(6,986 real changes made)
+variable sec7_q6_m was byte now float
+(6,988 real changes made)
+
+. 
+. *checking the values of the component
+. foreach var of local component {
+  2. tab `var'
+  3. }
+
+sec7_q4==Ta |
+   p in the |
+      house |      Freq.     Percent        Cum.
+------------+-----------------------------------
+  -.8932511 |      3,921       55.62       55.62
+   1.119347 |      3,129       44.38      100.00
+------------+-----------------------------------
+      Total |      7,050      100.00
+
+sec7_q4==Ya |
+    rd taps |      Freq.     Percent        Cum.
+------------+-----------------------------------
+  -.4317902 |      5,942       84.28       84.28
+   2.315611 |      1,108       15.72      100.00
+------------+-----------------------------------
+      Total |      7,050      100.00
+
+sec7_q4==Pu |
+ blic tap / |
+    Fontain |      Freq.     Percent        Cum.
+------------+-----------------------------------
+  -.1823872 |      6,823       96.78       96.78
+   5.482062 |        227        3.22      100.00
+------------+-----------------------------------
+      Total |      7,050      100.00
+
+sec7_q4==Ta |
+       p in |
+neighboor's |
+      house |      Freq.     Percent        Cum.
+------------+-----------------------------------
+  -.2582977 |      6,609       93.74       93.74
+   3.870952 |        441        6.26      100.00
+------------+-----------------------------------
+      Total |      7,050      100.00
+
+sec7_q4==Bo |
+     rehole |      Freq.     Percent        Cum.
+------------+-----------------------------------
+   -.450375 |      5,861       83.13       83.13
+   2.220057 |      1,189       16.87      100.00
+------------+-----------------------------------
+      Total |      7,050      100.00
+
+sec7_q4==We |
+         ll |      Freq.     Percent        Cum.
+------------+-----------------------------------
+  -.1600003 |      6,874       97.50       97.50
+   6.249102 |        176        2.50      100.00
+------------+-----------------------------------
+      Total |      7,050      100.00
+
+sec7_q4==Bo |
+ttled water |      Freq.     Percent        Cum.
+------------+-----------------------------------
+   -.144901 |      6,905       97.94       97.94
+   6.900285 |        145        2.06      100.00
+------------+-----------------------------------
+      Total |      7,050      100.00
+
+sec7_q4==Pl |
+  astic bag |
+   of water |      Freq.     Percent        Cum.
+------------+-----------------------------------
+    -.26541 |      6,586       93.42       93.42
+   3.767221 |        464        6.58      100.00
+------------+-----------------------------------
+      Total |      7,050      100.00
+
+sec7_q4==Ra |
+   in water |      Freq.     Percent        Cum.
+------------+-----------------------------------
+  -.0596508 |      7,025       99.65       99.65
+   16.76187 |         25        0.35      100.00
+------------+-----------------------------------
+      Total |      7,050      100.00
+
+sec7_q4==Ta |
+ nker-truck |      Freq.     Percent        Cum.
+------------+-----------------------------------
+  -.0476901 |      7,034       99.77       99.77
+   20.96575 |         16        0.23      100.00
+------------+-----------------------------------
+      Total |      7,050      100.00
+
+sec7_q4==Ca |
+    rt with |
+ small tank |
+     / drum |      Freq.     Percent        Cum.
+------------+-----------------------------------
+  -.0376862 |      7,040       99.86       99.86
+   26.53112 |         10        0.14      100.00
+------------+-----------------------------------
+      Total |      7,050      100.00
+
+sec7_q4==Su |
+rface water |
+    (river, |
+    stream, |
+ dam, lake, |
+      pond, |
+     canal, |
+ irrigation |
+     channe |      Freq.     Percent        Cum.
+------------+-----------------------------------
+  -.0584414 |      7,026       99.66       99.66
+   17.10872 |         24        0.34      100.00
+------------+-----------------------------------
+      Total |      7,050      100.00
+
+sec7_q4==Wa |
+   ter from |
+     spring |      Freq.     Percent        Cum.
+------------+-----------------------------------
+   -.098681 |      6,982       99.04       99.04
+   10.13222 |         68        0.96      100.00
+------------+-----------------------------------
+      Total |      7,050      100.00
+
+sec7_q4==Ot |
+        her |      Freq.     Percent        Cum.
+------------+-----------------------------------
+  -.0631419 |      7,022       99.60       99.60
+   15.83509 |         28        0.40      100.00
+------------+-----------------------------------
+      Total |      7,050      100.00
+
+sec7_q5==Do |
+  uche avec |
+   pot � la |
+     maison |      Freq.     Percent        Cum.
+------------+-----------------------------------
+   -1.18319 |      2,934       41.66       41.66
+   .8450531 |      4,108       58.34      100.00
+------------+-----------------------------------
+      Total |      7,042      100.00
+
+sec7_q5==Do |
+  uche avec |
+pot dans la |
+    latrine |      Freq.     Percent        Cum.
+------------+-----------------------------------
+   -.603228 |      5,163       73.32       73.32
+   1.657513 |      1,879       26.68      100.00
+------------+-----------------------------------
+      Total |      7,042      100.00
+
+sec7_q5==Do |
+  uche avec |
+pot dans le |
+         WC |      Freq.     Percent        Cum.
+------------+-----------------------------------
+  -.3408324 |      6,309       89.59       89.59
+   2.933577 |        733       10.41      100.00
+------------+-----------------------------------
+      Total |      7,042      100.00
+
+sec7_q5==Fo |
+        sse |
+  d�aisance |
+       sans |
+ dalle/trou |
+ouvert � la |
+     maison |      Freq.     Percent        Cum.
+------------+-----------------------------------
+  -.1299727 |      6,925       98.34       98.34
+    7.69283 |        117        1.66      100.00
+------------+-----------------------------------
+      Total |      7,042      100.00
+
+sec7_q5==Fo |
+        sse |
+  d�aisance |
+       sans |
+ dalle/trou |
+ouvert dans |
+ la latrine |      Freq.     Percent        Cum.
+------------+-----------------------------------
+  -.1413703 |      6,904       98.04       98.04
+   7.072615 |        138        1.96      100.00
+------------+-----------------------------------
+      Total |      7,042      100.00
+
+sec7_q5==Fo |
+        sse |
+  d�aisance |
+       sans |
+ dalle/trou |
+ouvert dans |
+      le WC |      Freq.     Percent        Cum.
+------------+-----------------------------------
+  -.0774542 |      7,000       99.40       99.40
+   12.90903 |         42        0.60      100.00
+------------+-----------------------------------
+      Total |      7,042      100.00
+
+sec7_q5==No |
+  facility, |
+      Bush, |
+     Field, |
+      Beach |      Freq.     Percent        Cum.
+------------+-----------------------------------
+  -.0596848 |      7,017       99.64       99.64
+   16.75232 |         25        0.36      100.00
+------------+-----------------------------------
+      Total |      7,042      100.00
+
+  Does your |
+  household |
+       have |
+ ELECTRICTY |
+         ?  |      Freq.     Percent        Cum.
+------------+-----------------------------------
+  -4.825696 |        289        4.12        4.12
+   .2071945 |      6,731       95.88      100.00
+------------+-----------------------------------
+      Total |      7,020      100.00
+
+  Does your |
+  household |
+     have a |
+   RADIO ?  |      Freq.     Percent        Cum.
+------------+-----------------------------------
+  -1.890749 |      1,531       21.86       21.86
+   .5288155 |      5,474       78.14      100.00
+------------+-----------------------------------
+      Total |      7,005      100.00
+
+  Does your |
+  household |
+     have a |
+ TELEVISION |
+         ?  |      Freq.     Percent        Cum.
+------------+-----------------------------------
+  -4.489346 |        331        4.73        4.73
+   .2227178 |      6,672       95.27      100.00
+------------+-----------------------------------
+      Total |      7,003      100.00
+
+  Does your |
+  household |
+     have a |
+     MOBILE |
+   PHONE ?  |      Freq.     Percent        Cum.
+------------+-----------------------------------
+  -3.560875 |        512        7.31        7.31
+   .2807898 |      6,493       92.69      100.00
+------------+-----------------------------------
+      Total |      7,005      100.00
+
+  Does your |
+  household |
+     have a |
+   WATCH ?  |      Freq.     Percent        Cum.
+------------+-----------------------------------
+  -1.972594 |      1,431       20.44       20.44
+   .5068742 |      5,569       79.56      100.00
+------------+-----------------------------------
+      Total |      7,000      100.00
+
+  Does your |
+  household |
+ have a CAR |
+         ?  |      Freq.     Percent        Cum.
+------------+-----------------------------------
+  -1.088367 |      3,205       45.77       45.77
+   .9186767 |      3,797       54.23      100.00
+------------+-----------------------------------
+      Total |      7,002      100.00
+
+  Does your |
+  household |
+have a BIKE |
+         ?  |      Freq.     Percent        Cum.
+------------+-----------------------------------
+  -.7131359 |      4,632       66.29       66.29
+   1.402057 |      2,356       33.71      100.00
+------------+-----------------------------------
+      Total |      6,988      100.00
+
+  Does your |
+  household |
+     have a |
+REFRIGERATO |
+       R ?  |      Freq.     Percent        Cum.
+------------+-----------------------------------
+  -2.464144 |        988       14.14       14.14
+   .4057624 |      6,000       85.86      100.00
+------------+-----------------------------------
+      Total |      6,988      100.00
+
+  Does your |
+  household |
+ have a FAN |
+         ?  |      Freq.     Percent        Cum.
+------------+-----------------------------------
+  -2.769274 |        806       11.53       11.53
+   .3610538 |      6,182       88.47      100.00
+------------+-----------------------------------
+      Total |      6,988      100.00
+
+  Does your |
+  household |
+   have AIR |
+CONDITIONER |
+         ?  |      Freq.     Percent        Cum.
+------------+-----------------------------------
+  -.8134719 |      4,205       60.17       60.17
+   1.229123 |      2,783       39.83      100.00
+------------+-----------------------------------
+      Total |      6,988      100.00
+
+  Does your |
+  household |
+     have a |
+MOTORBIKE ? |      Freq.     Percent        Cum.
+------------+-----------------------------------
+  -.8156106 |      4,195       60.05       60.05
+     1.2259 |      2,791       39.95      100.00
+------------+-----------------------------------
+      Total |      6,986      100.00
+
+  Does your |
+  household |
+have a BANK |
+ ACCOUNT ?  |      Freq.     Percent        Cum.
+------------+-----------------------------------
+  -.9469545 |      3,684       52.72       52.72
+   1.055866 |      3,304       47.28      100.00
+------------+-----------------------------------
+      Total |      6,988      100.00
+
+. 
+. /*substitution of mean for missing values
+> foreach var of local component {
+> qui sum `var',detail
+> replace `var'=`r(mean)' if `var'==.
+> }*/
+. 
+. 
+. local component "sec7_q4_n1 sec7_q4_n2 sec7_q4_n3 sec7_q4_n4 sec7_q4_n5 sec7_q4_n6 sec7_q4_n7 sec7_q4_n8 sec7_q4_n9 sec7_q4_n10 sec7_q4_n11 sec7_q4_n12 sec7_q4_n13 sec7_q4_n14 sec7_q5_n1 sec7_q5_n2 sec7_q5_n3 sec7_q5_n4 sec7_q5_n5 sec7_q5_n6 sec7_q5_n7 
+> sec7_q6_a sec7_q6_b sec7_q6_c sec7_q6_d sec7_q6_f sec7_q6_g sec7_q6_h sec7_q6_i sec7_q6_j sec7_q6_k sec7_q6_l sec7_q6_m"
+
+. 
+. pca `component', factor(1)
+
+Principal components/correlation                 Number of obs    =      6,985
+                                                 Number of comp.  =          1
+                                                 Trace            =         33
+    Rotation: (unrotated = principal)            Rho              =     0.0968
+
+    --------------------------------------------------------------------------
+       Component |   Eigenvalue   Difference         Proportion   Cumulative
+    -------------+------------------------------------------------------------
+           Comp1 |      3.19536      1.26739             0.0968       0.0968
+           Comp2 |      1.92797       .32205             0.0584       0.1553
+           Comp3 |      1.60592      .251427             0.0487       0.2039
+           Comp4 |      1.35449      .130155             0.0410       0.2450
+           Comp5 |      1.22434     .0253349             0.0371       0.2821
+           Comp6 |        1.199     .0513086             0.0363       0.3184
+           Comp7 |       1.1477     .0346402             0.0348       0.3532
+           Comp8 |      1.11306     .0196843             0.0337       0.3869
+           Comp9 |      1.09337     .0301851             0.0331       0.4200
+          Comp10 |      1.06319     .0195101             0.0322       0.4523
+          Comp11 |      1.04368    .00395397             0.0316       0.4839
+          Comp12 |      1.03972    .00678742             0.0315       0.5154
+          Comp13 |      1.03294     .0118149             0.0313       0.5467
+          Comp14 |      1.02112     .0109631             0.0309       0.5776
+          Comp15 |      1.01016    .00531438             0.0306       0.6082
+          Comp16 |      1.00484    .00700736             0.0304       0.6387
+          Comp17 |      .997836     .0134741             0.0302       0.6689
+          Comp18 |      .984362      .014062             0.0298       0.6988
+          Comp19 |        .9703     .0403522             0.0294       0.7282
+          Comp20 |      .929947     .0211255             0.0282       0.7563
+          Comp21 |      .908822    .00968173             0.0275       0.7839
+          Comp22 |       .89914      .054574             0.0272       0.8111
+          Comp23 |      .844566     .0215229             0.0256       0.8367
+          Comp24 |      .823043     .0128565             0.0249       0.8617
+          Comp25 |      .810187     .0881119             0.0246       0.8862
+          Comp26 |      .722075     .0235719             0.0219       0.9081
+          Comp27 |      .698503     .0428121             0.0212       0.9293
+          Comp28 |      .655691     .0590703             0.0199       0.9491
+          Comp29 |      .596621     .0209992             0.0181       0.9672
+          Comp30 |      .575621      .069198             0.0174       0.9847
+          Comp31 |      .506423      .506423             0.0153       1.0000
+          Comp32 |            0            0             0.0000       1.0000
+          Comp33 |            0            .             0.0000       1.0000
+    --------------------------------------------------------------------------
+
+Principal components (eigenvectors) 
+
+    --------------------------------------
+        Variable |    Comp1 | Unexplained 
+    -------------+----------+-------------
+      sec7_q4_n1 |   0.1225 |        .952 
+      sec7_q4_n2 |  -0.0380 |       .9954 
+      sec7_q4_n3 |  -0.0657 |       .9862 
+      sec7_q4_n4 |  -0.1262 |       .9491 
+      sec7_q4_n5 |  -0.0399 |       .9949 
+      sec7_q4_n6 |  -0.0943 |       .9716 
+      sec7_q4_n7 |   0.0528 |       .9911 
+      sec7_q4_n8 |   0.0728 |       .9831 
+      sec7_q4_n9 |  -0.0350 |       .9961 
+     sec7_q4_n10 |   0.0084 |       .9998 
+     sec7_q4_n11 |  -0.0068 |       .9999 
+     sec7_q4_n12 |   0.0090 |       .9997 
+     sec7_q4_n13 |   0.0126 |       .9995 
+     sec7_q4_n14 |  -0.0107 |       .9996 
+      sec7_q5_n1 |   0.2685 |       .7696 
+      sec7_q5_n2 |  -0.1632 |       .9149 
+      sec7_q5_n3 |  -0.1013 |       .9672 
+      sec7_q5_n4 |  -0.0872 |       .9757 
+      sec7_q5_n5 |  -0.0852 |       .9768 
+      sec7_q5_n6 |  -0.0546 |       .9905 
+      sec7_q5_n7 |  -0.0343 |       .9962 
+       sec7_q6_a |   0.2041 |       .8669 
+       sec7_q6_b |   0.1912 |       .8831 
+       sec7_q6_c |   0.2622 |       .7804 
+       sec7_q6_d |   0.2084 |       .8612 
+       sec7_q6_f |   0.2604 |       .7833 
+       sec7_q6_g |   0.3516 |        .605 
+       sec7_q6_h |   0.1917 |       .8826 
+       sec7_q6_i |   0.3030 |       .7066 
+       sec7_q6_j |   0.2085 |       .8611 
+       sec7_q6_k |   0.3328 |       .6462 
+       sec7_q6_l |   0.2042 |       .8668 
+       sec7_q6_m |   0.3297 |       .6526 
+    --------------------------------------
+
+. predict wealth_index
+(score assumed)
+
+Scoring coefficients 
+    sum of squares(column-loading) = 1
+
+    ------------------------
+        Variable |    Comp1 
+    -------------+----------
+      sec7_q4_n1 |   0.1225 
+      sec7_q4_n2 |  -0.0380 
+      sec7_q4_n3 |  -0.0657 
+      sec7_q4_n4 |  -0.1262 
+      sec7_q4_n5 |  -0.0399 
+      sec7_q4_n6 |  -0.0943 
+      sec7_q4_n7 |   0.0528 
+      sec7_q4_n8 |   0.0728 
+      sec7_q4_n9 |  -0.0350 
+     sec7_q4_n10 |   0.0084 
+     sec7_q4_n11 |  -0.0068 
+     sec7_q4_n12 |   0.0090 
+     sec7_q4_n13 |   0.0126 
+     sec7_q4_n14 |  -0.0107 
+      sec7_q5_n1 |   0.2685 
+      sec7_q5_n2 |  -0.1632 
+      sec7_q5_n3 |  -0.1013 
+      sec7_q5_n4 |  -0.0872 
+      sec7_q5_n5 |  -0.0852 
+      sec7_q5_n6 |  -0.0546 
+      sec7_q5_n7 |  -0.0343 
+       sec7_q6_a |   0.2041 
+       sec7_q6_b |   0.1912 
+       sec7_q6_c |   0.2622 
+       sec7_q6_d |   0.2084 
+       sec7_q6_f |   0.2604 
+       sec7_q6_g |   0.3516 
+       sec7_q6_h |   0.1917 
+       sec7_q6_i |   0.3030 
+       sec7_q6_j |   0.2085 
+       sec7_q6_k |   0.3328 
+       sec7_q6_l |   0.2042 
+       sec7_q6_m |   0.3297 
+    ------------------------
+
+. 
+. 
+.                 
+.         
+.         
+. ***¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
+. ***  4 SELECTING THE VARIABLE FOR THE BALANCE                      
+. ***_____________________________________________________________________________
+. 
+. 
+. global bc_var = "wealth_index size mig_plan mig_prep mig_des outside_contact_no age gender mig_classmates expectation_wage  employed asylum studies beaten duration journey_cost die_boat die_bef_boat moth_school fath_school"
+
+. 
+. 
+.         
+. //the global must be changed depending on the strategy of stratification because of convergence issues
+. global cov_var = "mig_plan mig_prep mig_des mig_classmates beaten"
+
+. 
+. 
+. ** Collapse at cluster level
+. collapse (mean) $bc_var latitude longitude, by(schoolid)
+
+. 
+. 
+. 
+. // STRATA : SCHOOL SIZE / DHS INDEX
+. xtile xtile_size=size, nq(2)
+
+. 
+. *xtile xtile_wealth = wealth_index, nq(3)
+. 
+. 
+. 
+. local strata "xtile_size"
+
+. egen strata=group(`strata')
+
+. label var strata "Strata"
+
+. tab strata, gen(strata_n)
+
+     Strata |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          1 |         80       50.00       50.00
+          2 |         80       50.00      100.00
+------------+-----------------------------------
+      Total |        160      100.00
+
+. 
+. 
+. 
+. ***¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
+. ***  5 TREATMENT ALLOCATION   WITH COVARIATES OPTION                   
+. ***_____________________________________________________________________________
+. 
+. *randomize, groups(4) block(`strata') seed(112358) replace balance($cov_var) jointp(0.2)  minruns(1000) 
+. randomize, groups(4) block(`strata') seed(112358) 
+Block breakdown:
+
+group(xtile |
+     _size) |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          1 |         80       50.00       50.00
+          2 |         80       50.00      100.00
+------------+-----------------------------------
+      Total |        160      100.00
+Randomizing block 1 with 80 records.
+Error in the manova test.
+
+Assignment results for block 1:
+
+_assignment |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          1 |         20       25.00       25.00
+          2 |         20       25.00       50.00
+          3 |         20       25.00       75.00
+          4 |         20       25.00      100.00
+------------+-----------------------------------
+      Total |         80      100.00
+
+Review balance within block 1:
+
+Multinomial logistic regression                 Number of obs     =         80
+                                                LR chi2(0)        =       0.00
+                                                Prob > chi2       =          .
+Log likelihood = -110.90355                     Pseudo R2         =     0.0000
+
+------------------------------------------------------------------------------
+ _assignment |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+1            |  (base outcome)
+-------------+----------------------------------------------------------------
+2            |
+       _cons |          0   .3162278     0.00   1.000     -.619795     .619795
+-------------+----------------------------------------------------------------
+3            |
+       _cons |          0   .3162278     0.00   1.000     -.619795     .619795
+-------------+----------------------------------------------------------------
+4            |
+       _cons |          0   .3162278     0.00   1.000     -.619795     .619795
+------------------------------------------------------------------------------
+Randomizing block 2 with 80 records.
+Error in the manova test.
+
+Assignment results for block 2:
+
+_assignment |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          1 |         20       25.00       25.00
+          2 |         20       25.00       50.00
+          3 |         20       25.00       75.00
+          4 |         20       25.00      100.00
+------------+-----------------------------------
+      Total |         80      100.00
+
+Review balance within block 2:
+
+Multinomial logistic regression                 Number of obs     =         80
+                                                LR chi2(0)        =       0.00
+                                                Prob > chi2       =          .
+Log likelihood = -110.90355                     Pseudo R2         =     0.0000
+
+------------------------------------------------------------------------------
+ _assignment |      Coef.   Std. Err.      z    P>|z|     [95% Conf. Interval]
+-------------+----------------------------------------------------------------
+1            |  (base outcome)
+-------------+----------------------------------------------------------------
+2            |
+       _cons |          0   .3162278     0.00   1.000     -.619795     .619795
+-------------+----------------------------------------------------------------
+3            |
+       _cons |          0   .3162278     0.00   1.000     -.619795     .619795
+-------------+----------------------------------------------------------------
+4            |
+       _cons |          0   .3162278     0.00   1.000     -.619795     .619795
+------------------------------------------------------------------------------
+
+Assignment results:
+
+_assignment |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          1 |         40       25.00       25.00
+          2 |         40       25.00       50.00
+          3 |         40       25.00       75.00
+          4 |         40       25.00      100.00
+------------+-----------------------------------
+      Total |        160      100.00
+
+. 
+. 
+. 
+. 
+. ***¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯¯
+. ***  6 BALANCE CHECKS                    
+. ***_____________________________________________________________________________
+. 
+. 
+. 
+.  
+.  
+. orth_out $bc_var using "$main/t_test_dummy_tot.xls", by(_assignment) se test pcompare stars replace covariates(strata_n*) count vcount title(Balance checks)  armlabel("Control group" "Treatment risk" "Treatment condition in UE" "Double Treatment")
+file C:\Users\CornoL\Dropbox\Lapa-Lapa\LuciaElianaGiacomo\logistics\03_data/04_final_data/t_test_dummy_tot.xls saved
+
+                                 Control g~p:  Treatment~k:  Treatment~E:  Double Tr~t:  (1) vs. (~e:  (1) vs. (~e:  (1) vs. (~e:  (2) vs. (~e:  (2) vs. (~e:  (3) vs. (~e:  p-value f~y:  N from or~t:
+                                           _             _             _             _             _             _             _             _             _             _             _             _
+      (mean) wealth_index:mean         0.021         0.027         0.041        -0.110         0.959         0.868         0.288         0.913         0.280         0.226         0.590       160.000
+                            se         0.088         0.090         0.091         0.087             .             .             .             .             .             .             .             .
+              (mean) size:mean       240.725       270.475       220.250       232.175         0.569         0.646         0.876         0.298         0.508         0.814         0.790       160.000
+                            se        44.158        49.688        34.211        47.650             .             .             .             .             .             .             .             .
+          (mean) mig_plan:mean         0.237         0.189         0.181         0.196         0.033         0.008         0.054         0.704         0.760         0.466         0.040       160.000
+                            se         0.016         0.016         0.013         0.015             .             .             .             .             .             .             .             .
+          (mean) mig_prep:mean         0.061         0.055         0.048         0.059         0.614         0.178         0.859         0.525         0.748         0.288         0.642       160.000
+                            se         0.006         0.009         0.006         0.008             .             .             .             .             .             .             .             .
+           (mean) mig_des:mean         0.337         0.291         0.271         0.290         0.044         0.004         0.043         0.400         0.986         0.414         0.033       160.000
+                            se         0.015         0.017         0.016         0.017             .             .             .             .             .             .             .             .
+(mean) outside_contact_no:mean         3.491         3.959         3.569         6.060         0.576         0.904         0.126         0.599         0.221         0.128         0.154       160.000
+                            se         0.531         0.638         0.364         1.570             .             .             .             .             .             .             .             .
+               (mean) age:mean        18.991        19.008        18.777        19.001         0.915         0.193         0.952         0.120         0.956         0.117         0.357       160.000
+                            se         0.124         0.107         0.104         0.094             .             .             .             .             .             .             .             .
+            (mean) gender:mean         0.501         0.521         0.519         0.502         0.372         0.281         0.961         0.934         0.473         0.432         0.697       160.000
+                            se         0.013         0.019         0.011         0.019             .             .             .             .             .             .             .             .
+    (mean) mig_classmates:mean         1.805         1.656         1.329         1.752         0.759         0.231         0.914         0.330         0.829         0.214         0.667       160.000
+                            se         0.374         0.313         0.124         0.312             .             .             .             .             .             .             .             .
+  (mean) expectation_wage:mean     4.527e+08     6.003e+10     1.600e+08     1.103e+11         0.324         0.419         0.188         0.321         0.627         0.187         0.364       160.000
+                            se     3.506e+08     6.000e+10  81091188.549     8.315e+10             .             .             .             .             .             .             .             .
+          (mean) employed:mean        34.394        33.664        33.587        33.101         0.483         0.491         0.217         0.946         0.573         0.667         0.692       160.000
+                            se         0.760         0.693         0.874         0.710             .             .             .             .             .             .             .             .
+            (mean) asylum:mean        31.212        32.164        32.706        31.398         0.473         0.247         0.876         0.710         0.582         0.330         0.656       160.000
+                            se         0.791         1.070         0.997         0.883             .             .             .             .             .             .             .             .
+           (mean) studies:mean        29.901        28.539        28.854        28.300         0.337         0.428         0.240         0.817         0.866         0.668         0.654       160.000
+                            se         0.962         1.024         0.884         0.957             .             .             .             .             .             .             .             .
+            (mean) beaten:mean        53.613        53.338        54.487        52.185         0.845         0.557         0.272         0.483         0.433         0.137         0.474       160.000
+                            se         0.860         1.094         1.201         0.968             .             .             .             .             .             .             .             .
+          (mean) duration:mean    823682.118    867669.521    385379.734   1370095.322         0.941         0.364         0.431         0.289         0.467         0.098         0.429       160.000
+                            se    426999.774    411532.064    214371.755    545305.380             .             .             .             .             .             .             .             .
+      (mean) journey_cost:mean  29161674.800  29427894.650  31279550.775  32290775.400         0.908         0.327         0.234         0.419         0.291         0.693         0.522       160.000
+                            se   1539339.881   1703444.196   1489928.488   2091121.378             .             .             .             .             .             .             .             .
+          (mean) die_boat:mean        43.753        44.846        43.724        41.622         0.365         0.984         0.087         0.418         0.012         0.132         0.097       160.000
+                            se         0.823         0.864         1.081         0.902             .             .             .             .             .             .             .             .
+      (mean) die_bef_boat:mean        39.620        39.832        38.780        37.876         0.853         0.524         0.111         0.426         0.084         0.479         0.361       160.000
+                            se         0.787         0.824         1.039         0.748             .             .             .             .             .             .             .             .
+       (mean) moth_school:mean         0.454         0.454         0.446         0.428         0.993         0.785         0.369         0.801         0.395         0.523         0.791       160.000
+                            se         0.021         0.023         0.021         0.021             .             .             .             .             .             .             .             .
+       (mean) fath_school:mean         0.610         0.597         0.590         0.611         0.658         0.505         0.971         0.831         0.618         0.464         0.865       160.000
+                            se         0.022         0.021         0.020         0.020             .             .             .             .             .             .             .             .
+                           N:_        40.000        40.000        40.000        40.000             .             .             .             .             .             .             .             .
+
+. orth_out $bc_var using "$main/t_test_nodummy_tot.xls", by(_assignment) se test pcompare stars replace count vcount title(Balance checks)  armlabel("Control group" "Treatment risk" "Treatment condition in UE" "Double Treatment")
+file C:\Users\CornoL\Dropbox\Lapa-Lapa\LuciaElianaGiacomo\logistics\03_data/04_final_data/t_test_nodummy_tot.xls saved
+
+                                 Control g~p:  Treatment~k:  Treatment~E:  Double Tr~t:  (1) vs. (~e:  (1) vs. (~e:  (1) vs. (~e:  (2) vs. (~e:  (2) vs. (~e:  (3) vs. (~e:  p-value f~y:  N from or~t:
+                                           _             _             _             _             _             _             _             _             _             _             _             _
+      (mean) wealth_index:mean         0.021         0.027         0.041        -0.110         0.959         0.873         0.296         0.914         0.278         0.234         0.602       160.000
+                            se         0.088         0.090         0.091         0.087             .             .             .             .             .             .             .             .
+              (mean) size:mean       240.725       270.475       220.250       232.175         0.656         0.715         0.896         0.408         0.580         0.839         0.873       160.000
+                            se        44.158        49.688        34.211        47.650             .             .             .             .             .             .             .             .
+          (mean) mig_plan:mean         0.237         0.189         0.181         0.196         0.033         0.008         0.055         0.702         0.759         0.464         0.040       160.000
+                            se         0.016         0.016         0.013         0.015             .             .             .             .             .             .             .             .
+          (mean) mig_prep:mean         0.061         0.055         0.048         0.059         0.615         0.181         0.859         0.528         0.748         0.289         0.647       160.000
+                            se         0.006         0.009         0.006         0.008             .             .             .             .             .             .             .             .
+           (mean) mig_des:mean         0.337         0.291         0.271         0.290         0.045         0.004         0.046         0.399         0.986         0.416         0.035       160.000
+                            se         0.015         0.017         0.016         0.017             .             .             .             .             .             .             .             .
+(mean) outside_contact_no:mean         3.491         3.959         3.569         6.060         0.574         0.903         0.125         0.597         0.219         0.126         0.152       160.000
+                            se         0.531         0.638         0.364         1.570             .             .             .             .             .             .             .             .
+               (mean) age:mean        18.991        19.008        18.777        19.001         0.917         0.190         0.952         0.124         0.957         0.115         0.362       160.000
+                            se         0.124         0.107         0.104         0.094             .             .             .             .             .             .             .             .
+            (mean) gender:mean         0.501         0.521         0.519         0.502         0.381         0.284         0.962         0.934         0.476         0.430         0.703       160.000
+                            se         0.013         0.019         0.011         0.019             .             .             .             .             .             .             .             .
+    (mean) mig_classmates:mean         1.805         1.656         1.329         1.752         0.761         0.231         0.914         0.334         0.829         0.212         0.669       160.000
+                            se         0.374         0.313         0.124         0.312             .             .             .             .             .             .             .             .
+  (mean) expectation_wage:mean     4.527e+08     6.003e+10     1.600e+08     1.103e+11         0.324         0.418         0.190         0.321         0.625         0.189         0.362       160.000
+                            se     3.506e+08     6.000e+10  81091188.549     8.315e+10             .             .             .             .             .             .             .             .
+          (mean) employed:mean        34.394        33.664        33.587        33.101         0.480         0.488         0.218         0.945         0.572         0.667         0.691       160.000
+                            se         0.760         0.693         0.874         0.710             .             .             .             .             .             .             .             .
+            (mean) asylum:mean        31.212        32.164        32.706        31.398         0.476         0.244         0.876         0.712         0.582         0.329         0.654       160.000
+                            se         0.791         1.070         0.997         0.883             .             .             .             .             .             .             .             .
+           (mean) studies:mean        29.901        28.539        28.854        28.300         0.335         0.425         0.242         0.816         0.865         0.672         0.654       160.000
+                            se         0.962         1.024         0.884         0.957             .             .             .             .             .             .             .             .
+            (mean) beaten:mean        53.613        53.338        54.487        52.185         0.844         0.556         0.274         0.482         0.432         0.140         0.476       160.000
+                            se         0.860         1.094         1.201         0.968             .             .             .             .             .             .             .             .
+          (mean) duration:mean    823682.118    867669.521    385379.734   1370095.322         0.941         0.362         0.433         0.302         0.464         0.097         0.426       160.000
+                            se    426999.774    411532.064    214371.755    545305.380             .             .             .             .             .             .             .             .
+      (mean) journey_cost:mean  29161674.800  29427894.650  31279550.775  32290775.400         0.908         0.326         0.232         0.416         0.292         0.695         0.519       160.000
+                            se   1539339.881   1703444.196   1489928.488   2091121.378             .             .             .             .             .             .             .             .
+          (mean) die_boat:mean        43.753        44.846        43.724        41.622         0.362         0.983         0.085         0.420         0.012         0.139         0.098       160.000
+                            se         0.823         0.864         1.081         0.902             .             .             .             .             .             .             .             .
+      (mean) die_bef_boat:mean        39.620        39.832        38.780        37.876         0.853         0.522         0.112         0.430         0.083         0.482         0.358       160.000
+                            se         0.787         0.824         1.039         0.748             .             .             .             .             .             .             .             .
+       (mean) moth_school:mean         0.454         0.454         0.446         0.428         0.993         0.785         0.368         0.801         0.394         0.528         0.793       160.000
+                            se         0.021         0.023         0.021         0.021             .             .             .             .             .             .             .             .
+       (mean) fath_school:mean         0.610         0.597         0.590         0.611         0.657         0.509         0.971         0.831         0.617         0.467         0.867       160.000
+                            se         0.022         0.021         0.020         0.020             .             .             .             .             .             .             .             .
+                           N:_        40.000        40.000        40.000        40.000             .             .             .             .             .             .             .             .
+
+. 
+. 
+. 
+. mata: table_tot = J(20, 6, .)
+
+. local l 0
+
+. 
+. *local bc_var  "         
+. 
+. 
+. foreach var of global bc_var {
+  2. 
+.         local l = `l' + 1
+  3.         
+.         
+.         qui sum `var' if _assignment == 1
+  4.         
+.         local m1 = `r(mean)'
+  5.         local v1 = `r(Var)'
+  6.         
+.         qui sum `var' if _assignment == 2
+  7.         local m2 = `r(mean)'
+  8.         local v2 = `r(Var)'
+  9.         
+.         qui sum `var' if _assignment == 3
+ 10.         local m3 = `r(mean)'
+ 11.         local v3 = `r(Var)'
+ 12.         
+.         qui sum `var' if _assignment == 4 
+ 13.         local m4 = `r(mean)'
+ 14.         local v4 = `r(Var)'
+ 15.         
+.         mata: table_tot[`l', 1] = (`m2' - `m1')/(sqrt(`v1'+`v2'))
+ 16.         mata: table_tot[`l', 2] = (`m3' - `m1')/(sqrt(`v1'+`v3'))
+ 17.         mata: table_tot[`l', 3] = (`m4' - `m1')/(sqrt(`v1'+`v4'))
+ 18.         mata: table_tot[`l', 4] = (`m3' - `m2')/(sqrt(`v2'+`v3'))
+ 19.         mata: table_tot[`l', 5] = (`m4' - `m2')/(sqrt(`v2'+`v4'))
+ 20.         mata: table_tot[`l', 6] = (`m4' - `m3')/(sqrt(`v3'+`v4'))
+ 21. }
+
+. 
+. mata: st_matrix("normalized", table_tot)
+
+. 
+. matrix colnames normalized = risk_control econ_control double_control risk_econ risk_double econ_double 
+
+. matrix rownames normalized = wealth_index size mig_plan mig_prep mig_des outside_contact_no age gender mig_classmates expectation_wage  employed asylum studies beaten duration journey_cost die_boat die_bef_boat moth_school fath_school
+
+. 
+. esttab matrix(normalized) using "$main/normalized_tot.csv", replace
+(output written to C:\Users\CornoL\Dropbox\Lapa-Lapa\LuciaElianaGiacomo\logistics\03_data/04_final_data/normalized_tot.csv)
+
+. 
+. matrix list normalized
+
+normalized[20,6]
+              risk_control  econ_control  double_con~l     risk_econ   risk_double   econ_double
+wealth_index     .00809482     .02536608    -.16636752     .01711803    -.17273473    -.18960735
+        size     .07076294    -.05795571    -.02080934    -.13163923    -.08796487     .03214359
+    mig_plan    -.34332865    -.43267402    -.30789926    -.06063827     .04867834     .11638273
+    mig_prep    -.07977395    -.21346147    -.02825754     -.1001342     .05087798     .16863733
+     mig_des    -.32248701    -.46943708    -.32004372    -.13407244    -.00269647     .12922748
+outside_co~o      .0892582      .0192763      .2450649    -.08396625     .19593827     .24431239
+         age     .01659259    -.20894393     .00952573    -.24561906    -.00864889     .25179001
+      gender     .13930086     .17053395      .0076537     -.0130853    -.11334855    -.12534751
+mig_classm~s    -.04831649    -.19100503    -.01723049    -.15366047      .0343293     .19918592
+expectatio~e     .15700263    -.12863514     .20892029    -.15777663     .07754968     .20947872
+    employed    -.11216795    -.11009564    -.19648963    -.01085175    -.08961696    -.06823039
+      asylum     .11325111     .18560615     .02481113     .05853855    -.08743204    -.15531446
+     studies     -.1533724    -.12668662    -.18659573     .03690073      -.026931    -.06727278
+      beaten    -.03126863     .09346458    -.17434692     .11178069    -.12478585    -.23584895
+    duration     .01172789     -.1450461     .12474189    -.16433953     .11628276     .26572692
+journey_cost     .01833378     .15631117     .19053892     .12936808     .16783069     .06227114
+    die_boat     .14489483    -.00329215    -.27590263    -.12821439     -.4081876    -.23619691
+die_bef_boat     .02943075    -.10179636    -.25386088    -.12538303    -.27794507    -.11169404
+ moth_school    -.00143068    -.04323266    -.14320209    -.03992011    -.13553519    -.10014315
+ fath_school     -.0704346    -.10484785     .00580216    -.03381635     .07939299     .11558276
+
+. 
+. 
+. preserve
+
+. 
+. mata: table_tot = J(20, 6, .)
+
+. local l 0
+
+. 
+. keep if strata == 1
+(80 observations deleted)
+
+. 
+. orth_out $bc_var using "$main/t_test_nodummy_1.xls", by(_assignment) se test pcompare stars replace count vcount title(Balance checks)  armlabel("Control group" "Treatment risk" "Treatment condition in UE" "Double Treatment")
+file C:\Users\CornoL\Dropbox\Lapa-Lapa\LuciaElianaGiacomo\logistics\03_data/04_final_data/t_test_nodummy_1.xls saved
+
+                                 Control g~p:  Treatment~k:  Treatment~E:  Double Tr~t:  (1) vs. (~e:  (1) vs. (~e:  (1) vs. (~e:  (2) vs. (~e:  (2) vs. (~e:  (3) vs. (~e:  p-value f~y:  N from or~t:
+                                           _             _             _             _             _             _             _             _             _             _             _             _
+      (mean) wealth_index:mean        -0.136         0.016        -0.129        -0.185         0.368         0.966         0.762         0.400         0.274         0.739         0.654        80.000
+                            se         0.103         0.131         0.110         0.125             .             .             .             .             .             .             .             .
+              (mean) size:mean        68.150        73.350        90.650        91.700         0.646         0.064         0.035         0.178         0.122         0.932         0.108        80.000
+                            se         7.310         8.516         9.283         7.882             .             .             .             .             .             .             .             .
+          (mean) mig_plan:mean         0.257         0.195         0.183         0.203         0.068         0.018         0.069         0.698         0.773         0.432         0.070        80.000
+                            se         0.023         0.024         0.019         0.017             .             .             .             .             .             .             .             .
+          (mean) mig_prep:mean         0.066         0.064         0.056         0.063         0.912         0.536         0.829         0.685         0.948         0.670         0.947        80.000
+                            se         0.011         0.014         0.010         0.010             .             .             .             .             .             .             .             .
+           (mean) mig_des:mean         0.358         0.298         0.282         0.311         0.086         0.022         0.165         0.655         0.708         0.391         0.144        80.000
+                            se         0.022         0.026         0.023         0.024             .             .             .             .             .             .             .             .
+(mean) outside_contact_no:mean         3.819         3.851         3.394         6.951         0.979         0.696         0.291         0.626         0.287         0.215         0.335        80.000
+                            se         0.943         0.763         0.532         2.769             .             .             .             .             .             .             .             .
+               (mean) age:mean        18.926        18.770        18.773        18.953         0.329         0.415         0.860         0.988         0.177         0.283         0.537        80.000
+                            se         0.124         0.096         0.138         0.092             .             .             .             .             .             .             .             .
+            (mean) gender:mean         0.476         0.501         0.520         0.486         0.395         0.089         0.752         0.516         0.689         0.315         0.524        80.000
+                            se         0.018         0.023         0.018         0.028             .             .             .             .             .             .             .             .
+    (mean) mig_classmates:mean         2.071         2.078         1.406         1.809         0.994         0.389         0.759         0.298         0.718         0.393         0.786        80.000
+                            se         0.737         0.605         0.199         0.422             .             .             .             .             .             .             .             .
+  (mean) expectation_wage:mean     1.562e+08     1.200e+11     1.074e+08     3.111e+09         0.324         0.652         0.338         0.324         0.336         0.331         0.406        80.000
+                            se  89895740.249     1.200e+11  58802206.229     3.046e+09             .             .             .             .             .             .             .             .
+          (mean) employed:mean        34.448        33.332        33.635        34.286         0.480         0.654         0.919         0.854         0.499         0.696         0.885        80.000
+                            se         1.226         0.972         1.316         1.004             .             .             .             .             .             .             .             .
+            (mean) asylum:mean        31.589        29.851        32.790        32.339         0.398         0.583         0.693         0.194         0.210         0.830         0.505        80.000
+                            se         1.396         1.480         1.657         1.270             .             .             .             .             .             .             .             .
+           (mean) studies:mean        29.982        27.754        29.453        29.930         0.328         0.796         0.982         0.399         0.331         0.812         0.694        80.000
+                            se         1.611         1.565         1.233         1.558             .             .             .             .             .             .             .             .
+            (mean) beaten:mean        53.267        53.135        53.535        50.959         0.949         0.908         0.212         0.880         0.329         0.298         0.647        80.000
+                            se         1.160         1.698         2.002         1.398             .             .             .             .             .             .             .             .
+          (mean) duration:mean    759808.686   1557790.093    742313.880    601230.317         0.452         0.983         0.849         0.371         0.307         0.823         0.681        80.000
+                            se    684692.580    797093.927    418149.268    467349.566             .             .             .             .             .             .             .             .
+      (mean) journey_cost:mean  27310377.700  28835716.050  31209778.350  35728821.000         0.607         0.192         0.047         0.391         0.090         0.261         0.093        80.000
+                            se   2211960.932   1940946.424   1931447.739   3458180.976             .             .             .             .             .             .             .             .
+          (mean) die_boat:mean        44.514        44.618        42.139        40.405         0.955         0.236         0.020         0.269         0.039         0.418         0.105        80.000
+                            se         1.068         1.462         1.659         1.317             .             .             .             .             .             .             .             .
+      (mean) die_bef_boat:mean        41.173        39.390        37.122        37.635         0.248         0.040         0.023         0.272         0.296         0.800         0.104        80.000
+                            se         0.946         1.188         1.651         1.153             .             .             .             .             .             .             .             .
+       (mean) moth_school:mean         0.450         0.449         0.418         0.407         0.966         0.378         0.267         0.383         0.268         0.775         0.548        80.000
+                            se         0.025         0.023         0.026         0.030             .             .             .             .             .             .             .             .
+       (mean) fath_school:mean         0.591         0.591         0.561         0.599         0.989         0.442         0.817         0.429         0.825         0.341         0.754        80.000
+                            se         0.025         0.024         0.028         0.028             .             .             .             .             .             .             .             .
+                           N:_        20.000        20.000        20.000        20.000             .             .             .             .             .             .             .             .
+
+. 
+. 
+. foreach var of global bc_var {
+  2. 
+.         local l = `l' + 1
+  3.         
+.         
+.         qui sum `var' if _assignment == 1
+  4.         
+.         local m1 = `r(mean)'
+  5.         local v1 = `r(Var)'
+  6.         
+.         qui sum `var' if _assignment == 2
+  7.         local m2 = `r(mean)'
+  8.         local v2 = `r(Var)'
+  9.         
+.         qui sum `var' if _assignment == 3
+ 10.         local m3 = `r(mean)'
+ 11.         local v3 = `r(Var)'
+ 12.         
+.         qui sum `var' if _assignment == 4 
+ 13.         local m4 = `r(mean)'
+ 14.         local v4 = `r(Var)'
+ 15.         
+.         mata: table_tot[`l', 1] = (`m2' - `m1')/(sqrt(`v1'+`v2'))
+ 16.         mata: table_tot[`l', 2] = (`m3' - `m1')/(sqrt(`v1'+`v3'))
+ 17.         mata: table_tot[`l', 3] = (`m4' - `m1')/(sqrt(`v1'+`v4'))
+ 18.         mata: table_tot[`l', 4] = (`m3' - `m2')/(sqrt(`v2'+`v3'))
+ 19.         mata: table_tot[`l', 5] = (`m4' - `m2')/(sqrt(`v2'+`v4'))
+ 20.         mata: table_tot[`l', 6] = (`m4' - `m3')/(sqrt(`v3'+`v4'))
+ 21. }
+
+. 
+. mata: st_matrix("normalized", table_tot)
+
+. 
+. matrix colnames normalized = risk_control econ_control double_control risk_econ risk_double econ_double 
+
+. matrix rownames normalized = wealth_index size mig_plan mig_prep mig_des outside_contact_no age gender mig_classmates expectation_wage  employed asylum studies beaten duration journey_cost die_boat die_bef_boat moth_school fath_school
+
+. 
+. matrix list normalized
+
+normalized[20,6]
+              risk_control  econ_control  double_con~l     risk_econ   risk_double   econ_double
+wealth_index     .20393181     .00958327    -.06819714    -.19024242    -.24823143    -.07498806
+        size      .1036026     .42579831     .48987163     .30706582     .35360545     .01927973
+    mig_plan    -.42006522    -.55202277     -.4184793    -.08730654     .06492228     .17775428
+    mig_prep    -.02477275     -.1396004    -.04859463    -.09137238    -.01466539     .09609741
+     mig_des    -.39411958    -.53324609    -.31667694    -.10074914     .08423677     .19395872
+outside_co~o      .0058725    -.08794731     .23941224    -.10998802     .24133589     .28212546
+         age    -.22133988     -.1843124     .03959356     .00335985        .30766     .24345984
+      gender     .19235929      .3898986     .07130764     .14660938    -.09021559     -.2274685
+mig_classm~s     .00157898    -.19476891    -.06896043    -.23601394    -.08149144     .19337153
+expectatio~e     .22335209    -.10160969     .21677214    -.22344308     -.2177763     .22040819
+    employed    -.15947538      -.101084    -.02282674     .04134025      .1526799     .08799293
+      asylum    -.19099793     .12390853     .08880281     .29573922     .28518404    -.04831817
+     studies    -.22176927    -.05831129    -.00518965      .1905935     .22024649     .05367197
+      beaten    -.01430395     .02593751    -.28409258     .03406816    -.22126617    -.23591353
+    duration     .16980921    -.00487605    -.04277413    -.20258074    -.23148645    -.05030592
+journey_cost     .11590206     .29692522     .45855751     .19387028     .38867515      .2551096
+    die_boat     .01280239    -.26911045    -.54166616    -.25063151    -.47862158    -.18295286
+die_bef_boat     -.2623881    -.47595525    -.53030769    -.24936091    -.23711502     .05690769
+ moth_school    -.00960839    -.19930968    -.25210017    -.19736916    -.25153291    -.06428598
+ fath_school     .00310027    -.17369786     .05213195     -.1788109     .04986113     .21552111
+
+. 
+. esttab matrix(normalized) using "$main/normalized_1.csv", replace
+(output written to C:\Users\CornoL\Dropbox\Lapa-Lapa\LuciaElianaGiacomo\logistics\03_data/04_final_data/normalized_1.csv)
+
+. 
+. restore
+
+. 
+. preserve
+
+. 
+. mata: table_tot = J(20, 6, .)
+
+. local l 0
+
+. 
+. keep if strata == 2
+(80 observations deleted)
+
+. 
+. orth_out $bc_var using "$main/t_test_nodummy_2.xls", by(_assignment) se test pcompare stars replace count vcount title(Balance checks)  armlabel("Control group" "Treatment risk" "Treatment condition in UE" "Double Treatment")
+file C:\Users\CornoL\Dropbox\Lapa-Lapa\LuciaElianaGiacomo\logistics\03_data/04_final_data/t_test_nodummy_2.xls saved
+
+                                 Control g~p:  Treatment~k:  Treatment~E:  Double Tr~t:  (1) vs. (~e:  (1) vs. (~e:  (1) vs. (~e:  (2) vs. (~e:  (2) vs. (~e:  (3) vs. (~e:  p-value f~y:  N from or~t:
+                                           _             _             _             _             _             _             _             _             _             _             _             _
+      (mean) wealth_index:mean         0.177         0.038         0.212        -0.035         0.463         0.861         0.257         0.360         0.682         0.188         0.508        80.000
+                            se         0.138         0.127         0.137         0.122             .             .             .             .             .             .             .             .
+              (mean) size:mean       413.300       467.600       349.850       372.650         0.604         0.476         0.713         0.220         0.413         0.822         0.676        80.000
+                            se        69.401        77.282        54.318        84.745             .             .             .             .             .             .             .             .
+          (mean) mig_plan:mean         0.218         0.183         0.179         0.188         0.256         0.180         0.357         0.890         0.883         0.776         0.578        80.000
+                            se         0.021         0.022         0.019         0.024             .             .             .             .             .             .             .             .
+          (mean) mig_prep:mean         0.056         0.047         0.040         0.055         0.474         0.157         0.976         0.603         0.577         0.285         0.594        80.000
+                            se         0.008         0.010         0.008         0.012             .             .             .             .             .             .             .             .
+           (mean) mig_des:mean         0.317         0.284         0.260         0.269         0.283         0.077         0.150         0.457         0.667         0.774         0.308        80.000
+                            se         0.022         0.022         0.023         0.024             .             .             .             .             .             .             .             .
+(mean) outside_contact_no:mean         3.163         4.068         3.745         5.168         0.440         0.421         0.223         0.782         0.557         0.385         0.546        80.000
+                            se         0.506         1.043         0.507         1.538             .             .             .             .             .             .             .             .
+               (mean) age:mean        19.057        19.247        18.782        19.048         0.502         0.314         0.975         0.058         0.419         0.255         0.351        80.000
+                            se         0.218         0.177         0.159         0.167             .             .             .             .             .             .             .             .
+            (mean) gender:mean         0.526         0.541         0.519         0.517         0.659         0.757         0.786         0.512         0.552         0.964         0.875        80.000
+                            se         0.017         0.031         0.015         0.026             .             .             .             .             .             .             .             .
+    (mean) mig_classmates:mean         1.540         1.235         1.252         1.695         0.148         0.195         0.756         0.934         0.353         0.376         0.552        80.000
+                            se         0.157         0.135         0.152         0.471             .             .             .             .             .             .             .             .
+  (mean) expectation_wage:mean     7.492e+08  43935685.875     2.126e+08     2.175e+11         0.319         0.457         0.196         0.280         0.195         0.195         0.167        80.000
+                            se     6.980e+08  21244417.687     1.525e+08     1.648e+11             .             .             .             .             .             .             .             .
+          (mean) employed:mean        34.339        33.995        33.539        31.917         0.804         0.599         0.077         0.771         0.143         0.293         0.357        80.000
+                            se         0.932         1.009         1.184         0.955             .             .             .             .             .             .             .             .
+            (mean) asylum:mean        30.834        34.477        32.622        30.456         0.028         0.207         0.796         0.312         0.036         0.206         0.063        80.000
+                            se         0.778         1.393         1.156         1.222             .             .             .             .             .             .             .             .
+           (mean) studies:mean        29.821        29.323        28.256        26.670         0.775         0.360         0.043         0.569         0.124         0.341         0.260        80.000
+                            se         1.096         1.338         1.285         1.027             .             .             .             .             .             .             .             .
+            (mean) beaten:mean        53.960        53.541        55.438        53.412         0.829         0.434         0.768         0.339         0.947         0.289         0.699        80.000
+                            se         1.295         1.422         1.349         1.317             .             .             .             .             .             .             .             .
+          (mean) duration:mean    887555.551    177548.948     28445.587   2138960.327         0.195         0.113         0.264         0.147         0.051         0.036         0.035        80.000
+                            se    528464.144     98842.040     19971.129    969582.580             .             .             .             .             .             .             .             .
+      (mean) journey_cost:mean  31012971.900  30020073.250  31349323.200  28852729.800         0.781         0.915         0.481         0.719         0.747         0.438         0.881        80.000
+                            se   2115220.445   2847480.766   2319960.579   2179037.687             .             .             .             .             .             .             .             .
+          (mean) die_boat:mean        42.992        45.075        45.310        42.838         0.196         0.213         0.930         0.887         0.154         0.177         0.309        80.000
+                            se         1.257         0.960         1.333         1.204             .             .             .             .             .             .             .             .
+      (mean) die_bef_boat:mean        38.067        40.273        40.438        38.116         0.191         0.166         0.974         0.922         0.165         0.141         0.269        80.000
+                            se         1.181         1.163         1.191         0.981             .             .             .             .             .             .             .             .
+       (mean) moth_school:mean         0.458         0.459         0.475         0.449         0.986         0.730         0.831         0.765         0.832         0.551         0.960        80.000
+                            se         0.034         0.040         0.032         0.029             .             .             .             .             .             .             .             .
+       (mean) fath_school:mean         0.630         0.602         0.620         0.624         0.587         0.823         0.890         0.706         0.650         0.925         0.941        80.000
+                            se         0.036         0.035         0.029         0.030             .             .             .             .             .             .             .             .
+                           N:_        20.000        20.000        20.000        20.000             .             .             .             .             .             .             .             .
+
+. 
+. 
+. foreach var of global bc_var {
+  2. 
+.         local l = `l' + 1
+  3.         
+.         
+.         qui sum `var' if _assignment == 1
+  4.         
+.         local m1 = `r(mean)'
+  5.         local v1 = `r(Var)'
+  6.         
+.         qui sum `var' if _assignment == 2
+  7.         local m2 = `r(mean)'
+  8.         local v2 = `r(Var)'
+  9.         
+.         qui sum `var' if _assignment == 3
+ 10.         local m3 = `r(mean)'
+ 11.         local v3 = `r(Var)'
+ 12.         
+.         qui sum `var' if _assignment == 4 
+ 13.         local m4 = `r(mean)'
+ 14.         local v4 = `r(Var)'
+ 15.         
+.         mata: table_tot[`l', 1] = (`m2' - `m1')/(sqrt(`v1'+`v2'))
+ 16.         mata: table_tot[`l', 2] = (`m3' - `m1')/(sqrt(`v1'+`v3'))
+ 17.         mata: table_tot[`l', 3] = (`m4' - `m1')/(sqrt(`v1'+`v4'))
+ 18.         mata: table_tot[`l', 4] = (`m3' - `m2')/(sqrt(`v2'+`v3'))
+ 19.         mata: table_tot[`l', 5] = (`m4' - `m2')/(sqrt(`v2'+`v4'))
+ 20.         mata: table_tot[`l', 6] = (`m4' - `m3')/(sqrt(`v3'+`v4'))
+ 21. }
+
+. 
+. mata: st_matrix("normalized", table_tot)
+
+. 
+. matrix colnames normalized = risk_control econ_control double_control risk_econ risk_double econ_double 
+
+. matrix rownames normalized = wealth_index size mig_plan mig_prep mig_des outside_contact_no age gender mig_classmates expectation_wage  employed asylum studies beaten duration journey_cost die_boat die_bef_boat moth_school fath_school
+
+. 
+. matrix list normalized
+
+normalized[20,6]
+              risk_control  econ_control  double_con~l     risk_econ   risk_double   econ_double
+wealth_index    -.16584457      .0394185     -.2574046     .20723406    -.09234733    -.29982033
+        size     .11689464    -.16098634    -.08298259     -.2787356    -.18511822     .05064875
+    mig_plan    -.25790999    -.30528926    -.20865534    -.03114758      .0332387     .06408818
+    mig_prep    -.16180599    -.32276297    -.00677773    -.11719969     .12566593     .24230825
+     mig_des    -.24360955    -.40679858    -.32835851     -.1680927    -.09706243     .06477028
+outside_co~o     .17459683     .18187012     .27685979    -.06218615     .13234239     .19637514
+         age     .15147145    -.22796456    -.00698232    -.43706165    -.18271797     .25848973
+      gender       .099585     -.0697776    -.06125783    -.14790249    -.13419737    -.01020002
+mig_classm~s    -.33009353    -.29468868     .07007991      .0187204     .21010987     .20024303
+expectatio~e    -.22583805     -.1679643      .2941099     .24493572     .29506943     .29484053
+    employed    -.05601969    -.11867557    -.40595579    -.06549854    -.33458844    -.23858277
+      asylum     .51050438     .28691112    -.05827207    -.22920645    -.48517115    -.28786731
+     studies    -.06435695     -.2071003    -.46910568    -.12858208    -.35177405    -.21557841
+      beaten    -.04867307       .176743    -.06631882     .21639655     -.0148997    -.24031122
+    duration    -.29530128    -.36325227     .25340548    -.33062978     .45001176     .48662731
+journey_cost     -.0625907     .02395629    -.15906196     .08092446    -.07279889    -.17539574
+    die_boat     .29456543     .28299692    -.01976165      .0319799     -.3248483    -.30778165
+die_bef_boat     .29757723     .31606599     .00722072     .02217579     -.3168881    -.33637831
+ moth_school     .00383746     .07780055    -.04809155     .06720882    -.04779759    -.13450837
+ fath_school    -.12251774    -.05047364    -.03100394     .08501671     .10238491     .02108628
+
+. 
+. 
+. esttab matrix(normalized) using "$main/normalized_2.csv", replace
+(output written to C:\Users\CornoL\Dropbox\Lapa-Lapa\LuciaElianaGiacomo\logistics\03_data/04_final_data/normalized_2.csv)
+
+. 
+. 
+. restore
+
+. 
+. 
+. 
+. *twoway (scatter latitude longitude if _assignment == 1, mc(black)) (scatter latitude longitude if _assignment == 2, mc(blue)) (scatter latitude longitude if _assignment == 3, mc(red)) (scatter latitude longitude if _assignment == 4, mc(yellow)) ,  lege
+> nd(label(1 control) label(2 risk) label(3 econ) label(4 double))
+. 
+. 
+end of do-file
+
+. log close
+      name:  <unnamed>
+       log:  C:\Users\CornoL\Dropbox\Lapa-Lapa\LuciaElianaGiacomo\logistics\03_data\04_final_data\output\prova.log
+  log type:  text
+ closed on:   1 Mar 2019, 15:47:05
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
