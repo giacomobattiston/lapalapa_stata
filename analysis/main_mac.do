@@ -3,8 +3,7 @@ clear all
 set more off
 
 global main "/Users/giacomobattiston/Dropbox/ricerca_dropbox/Lapa-Lapa/LuciaElianaGiacomo"
-*global main "C:\Users\BattistonG\Dropbox\ricerca_dropbox\Lapa-Lapa\LuciaElianaGiacomo"
-*global main "/home/giacomobattiston/Dropbox/ricerca_dropbox/Lapa-Lapa/LuciaElianaGiacomo"
+global main "D:\Users\gb\Documents\LuciaElianaGiacomo\"
 
 use ${main}/Data/output/followup2/BME_final.dta
 *use "/home/giacomobattiston/Downloads/BME_final.dta"
@@ -1819,56 +1818,69 @@ gen askedvisa100 = askedvisa*100
 gen contact_eu100 = contact_eu*100
 
 
+
+
+
 * MIGRATION INTENTIONS AND ACTUAL MIGRATION
 
 qui sum migration_guinea100 if l2.treatment_status == 1  &  source_info_guinea < 6
 local meandep = `r(mean)'
 		
 forval i_est = 1/3 {
-	forval i_con = 1/2 {
+	forval i_y = 1/2 {
 		
-					
-		if `i_con' == 1 {
-			local controls
-			local individual "No"
-			local school "No"
-		}
+
 
 		
-		if `i_con' == 2 {
-			local controls `demographics' `school_char' strata
+		if `i_y' == 1 {
+			gen y = migration_guinea100
+			local controls `demographics' i.schoolid#i.classe_baseline 
 			local individual "Yes"
-			local school "Yes"
+			local schoolxclass "Yes"
+			local beliefs "No"
 		}
+		
+		if `i_y' == 2 {
+			gen y = migration_guinea100
+			local controls `demographics' i.schoolid#i.classe_baseline asinhmrisk_duration_winsor mrisk_beaten mrisk_forced_work asinhmrisk_journey_cost_winsor mrisk_kidnapped mrisk_die_bef_boat mrisk_die_boat mrisk_sent_back finding_job continuing_studies  asylum becoming_citizen return_5yr government_financial_help  in_favor_of_migration asinhexpectation_wage_winsor asinhexp_liv_cost_winsor  
+			local individual "Yes"
+			local schoolxclass "Yes"
+			local beliefs "Yes"
+		}
+		
+		
+
 
 		if `i_est' == 1 {
-			reg f2.migration_guinea100 f.desire  `controls' ///
-			if f2.source_info_guinea < 6  & attended_tr != . & treatment_status == 1,
+			reg f2.y f.desire   `controls' ///
+			if f2.source_info_guinea < 6  & attended_tr != . & treatment_status == 1, cluster(schoolid)
 		}
 		
 		if `i_est' == 2 {
-			reg f2.migration_guinea100 f.planning  `controls' ///
-			if f2.source_info_guinea < 6  & attended_tr != . & treatment_status == 1,
+			reg f2.y f.planning  `controls' ///
+			if f2.source_info_guinea < 6  & attended_tr != . & treatment_status == 1, cluster(schoolid)
 		}
 		
 		if `i_est' == 3 {
-			reg f2.migration_guinea100 f.prepare   `controls' ///
-			if f2.source_info_guinea < 6  & attended_tr != . & treatment_status == 1,
+			reg f2.y f.prepare  `controls' ///
+			if f2.source_info_guinea < 6  & attended_tr != . & treatment_status == 1, cluster(schoolid)
 		}
 		
 		
 		
 		
 		estadd local individual = "`individual'"
-		estadd local school = "`school'"
+		estadd local schoolxclass = "`schoolxclass'"
+		estadd local beliefs = "`beliefs'"
 				
 		estadd local space " "
 		
 		local meandep = string(`meandep', "%9.2f")
 		estadd local meandep = `"`meandep'\%"'
 		
-		eststo reg`i_est'_`i_con'
+		eststo reg`i_est'_`i_y'
 		
+		drop y
 
 		
 	}
@@ -1877,14 +1889,13 @@ forval i_est = 1/3 {
 
 esttab reg* using tablecontacts_migintandmig.tex, replace keep(F.desire F.planning F.prepare) ///
 coeflabels(F.desire "Desire to migrate at midline" F.planning "Planning to migrate at midline" F.prepare "Preparing to migrate at midline")   se substitute(\_ _) ///
-nomtitles stats(space individual school N meandep, fmt(s s s 0 3) ///
+nomtitles stats(space individual schoolxclass beliefs N meandep, fmt(s s s s 0 3) ///
 layout("\multicolumn{1}{c}{@}" "\multicolumn{1}{c}{@}"    "\multicolumn{1}{c}{@}" "\multicolumn{1}{c}{@}" "\multicolumn{1}{c}{@}")  ///
-labels(`" "'  `"Individual controls"' `"School controls"' `"\(N\)"'  `"Mean dep. var. control"')) ///
+labels(`" "'  `"Individual controls"' `"School by class FEs"' `"Beliefs at baseline"' `"\(N\)"'  `"Mean dep. var. control"')) ///
 starlevels(\sym{*} 0.1 \sym{**} 0.05 \sym{***} 0.01) ///
 postfoot("\hline\hline \end{tabular}") 	prehead("\begin{tabular}{l*{7}{c}} \hline\hline  &\multicolumn{6}{c}{y = migration from Guinea} \\             &\multicolumn{1}{c}{(1)}&\multicolumn{1}{c}{(2)}&\multicolumn{1}{c}{(3)}&\multicolumn{1}{c}{(4)}&\multicolumn{1}{c}{(5)}&\multicolumn{1}{c}{(6)}\\")   nonumbers
 
-
-
+stop
 
 
 * MIGRATION INTENTIONS AND ACTUAL MIGRATION
