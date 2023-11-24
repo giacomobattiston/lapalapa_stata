@@ -1820,6 +1820,8 @@ gen contact_eu100 = contact_eu*100
 
 
 
+/*
+
 
 * MIGRATION INTENTIONS AND ACTUAL MIGRATION
 
@@ -1895,7 +1897,7 @@ labels(`" "'  `"Individual controls"' `"School by class FEs"' `"Beliefs at basel
 starlevels(\sym{*} 0.1 \sym{**} 0.05 \sym{***} 0.01) ///
 postfoot("\hline\hline \end{tabular}") 	prehead("\begin{tabular}{l*{7}{c}} \hline\hline  &\multicolumn{6}{c}{y = migration from Guinea} \\             &\multicolumn{1}{c}{(1)}&\multicolumn{1}{c}{(2)}&\multicolumn{1}{c}{(3)}&\multicolumn{1}{c}{(4)}&\multicolumn{1}{c}{(5)}&\multicolumn{1}{c}{(6)}\\")   nonumbers
 
-stop
+
 
 
 * MIGRATION INTENTIONS AND ACTUAL MIGRATION
@@ -1969,8 +1971,6 @@ postfoot("\hline\hline \end{tabular}") 	prehead("\begin{tabular}{l*{7}{c}} \hlin
 
 
 
-
-/*
 * TYPE OF CONTACTS ALL VS EU
 
 qui sum migration_guinea100 if l2.treatment_status == 1  &  source_info_guinea < 6
@@ -2553,7 +2553,7 @@ esttab reg* using contact_cor2.tex, replace keep(mrisk_index economic_index desi
 	starlevels(\sym{*} 0.1 \sym{**} 0.05 \sym{***} 0.01) ///
 	postfoot("\hline\hline \end{tabular}") 		prehead("\begin{tabular}{l*{8}{c}} \hline\hline  &\multicolumn{7}{c}{y = contacts in the EU} \\             &\multicolumn{1}{c}{(1)}&\multicolumn{1}{c}{(2)}&\multicolumn{1}{c}{(3)}&\multicolumn{1}{c}{(4)}&\multicolumn{1}{c}{(5)}&\multicolumn{1}{c}{(6)}&\multicolumn{1}{c}{(7)}    \\  ")
 
-*/
+
 
 *MIGRATION (restricted sample)
 
@@ -2684,9 +2684,7 @@ esttab reg* using table3b.tex, replace keep(2.x 3.x 4.x) ///
 	nobaselevels ///
 	prehead("") posthead("  \\ \textbf{\textit{Panel (b)}}  & & &  &  &  &  \\ [1em]")    postfoot("\hline\hline \end{tabular}}") 
 
-stop
 
-/*
 *MIGRATION WITHOUT VISA OR AIRPLANE (restricted sample)
 
 eststo clear
@@ -3115,37 +3113,118 @@ esttab reg* using mig_intentions.tex, replace keep(1.contact_eu 1.contact_noeu) 
 	
 
 	
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 */
 
 
 
 
+*VISA INTENTIONS BY BELIEFS (restricted sample), mean
 
+eststo clear
 
+gen x = treatment_status
+gen inter = mrisk_index
 
+forval i_var = 1/3 {
+	forval i_con = 1/2 {
 
+		if `i_var' == 1 {
+			gen y = desire100
+			local ycon desire
+			*replace y = 1 if time == 1 & f1.migration_guinea == 1
+		}
+		
+		if `i_var' == 2 {
+			gen y = planning100
+			local ycon planning
+			*replace y = 1 if time == 1 & f1.migration_guinea == 1
+		}
+		
+		if `i_var' == 3 {
+			gen y = prepare100
+			local ycon prepare
+			*replace y = 1 if time == 1 & f1.migration_guinea == 1
+		}
+		
+		
+		if `i_con' == 1 {
+			local controls
+			local individual "No"
+			local school "No"	
+		}
+		
+		if `i_con' == 2 {
+			local controls `demographics' `school_char' strata
+			local individual "Yes"
+			local school "Yes"		
+		}
+		
+		qui sum y if l2.treatment_status == 1  &  source_info_guinea < 6
+		local meandep = `r(mean)'
 
+		qui reg f1.y i.x##c.inter y  `controls'  ///
+			if time == 0 & attended_tr != . &  f2.source_info_guinea < 6, cluster(schoolid)
+		drop y
 
+		estadd local space " "
+	
+		estadd local individual = "`individual'"
+		estadd local school = "`school'"
+		
+		local meandep = string(`meandep', "%9.2f")
+		estadd local meandep = `"`meandep'\%"'
+		
+		eststo reg`i_var'_`i_con'
+		
+		
+	}
+}
 
+esttab reg* using mig_intentions_beleu.tex, replace 	keep(2.x 3.x 4.x 2.x#c.inter 3.x#c.inter 4.x#c.inter inter) ///
+	coeflabels(2.x "\(T1\) - Risk" 3.x "\(T2\) - Econ" 4.x "\(T3\) - Combined" ///
+	2.x#c.inter "\(T1\) - Risk \(*\) Contact in the EU" 3.x#c.inter "\(T2\) - Econ \(*\) Contact in the EU" 4.x#c.inter "\(T3\) - Combined \(*\) Contact in the EU" ///
+	c.inter "Contact in the EU" strata "Big school")   se substitute(\_ _) ///
+	nomtitles nonumbers ///
+	stats(space individual school N meandep, fmt( s s s 0 3) ///
+	layout("\multicolumn{1}{c}{@}" "\multicolumn{1}{c}{@}" "\multicolumn{1}{c}{@}")  ///
+	labels(`" "'  `"Individual controls"' `"School controls"' `"\(N\)"'  `"Mean dep. var. control"')) ///
+	starlevels(\sym{*} 0.1 \sym{**} 0.05 \sym{***} 0.01) ///
+	postfoot("\hline\hline \end{tabular}") 		prehead("\begin{tabular}{l*{7}{c}} \hline\hline  &\multicolumn{6}{c}{y = intends to migrate at baseline} \\             &\multicolumn{1}{c}{(1)}&\multicolumn{1}{c}{(2)}&\multicolumn{1}{c}{(3)}&\multicolumn{1}{c}{(4)}&\multicolumn{1}{c}{(5)}&\multicolumn{1}{c}{(6)}  \\ \cmidrule(lr){2-7} & \multicolumn{2}{c}{   \Shortstack{1em}{Wishes to \\  migrate}   }&\multicolumn{2}{c}{\Shortstack{1em}{Plans to \\  migrate}}&\multicolumn{2}{c}{\Shortstack{1em}{Prepares to \\ migrate}}  \\  ")
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+	
+drop x inter
+stop
 
 
 
@@ -3224,6 +3303,81 @@ esttab reg* using mig_intentions_coneu.tex, replace 	keep(2.x 3.x 4.x 2.x#1.inte
 
 	
 drop x inter
+stop
+
+/*
+
+*BELIEFS BY CONTACTS (restricted sample), mean
+
+eststo clear
+
+gen x = treatment_status
+gen inter = daily_contact_eu
+
+forval i_var = 1/2 {
+	forval i_con = 1/2 {
+
+		if `i_var' == 1 {
+			gen y = mrisk_index
+			local ycon mrisk_index
+			*replace y = 1 if time == 1 & f1.migration_guinea == 1
+		}
+		
+		if `i_var' == 2 {
+			gen y = economic_index
+			local ycon economic_index
+			*replace y = 1 if time == 1 & f1.migration_guinea == 1
+		}
+
+		
+		if `i_con' == 1 {
+			local controls
+			local individual "No"
+			local school "No"	
+		}
+		
+		if `i_con' == 2 {
+			local controls `demographics' `school_char' strata
+			local individual "Yes"
+			local school "Yes"		
+		}
+		
+		qui sum y if l2.treatment_status == 1  &  source_info_guinea < 6
+		local meandep = `r(mean)'
+
+		qui reg f1.y i.x##i.inter y  `controls'  ///
+			if time == 0 & attended_tr != . &  f2.source_info_guinea < 6, cluster(schoolid)
+		drop y
+
+		estadd local space " "
+	
+		estadd local individual = "`individual'"
+		estadd local school = "`school'"
+		
+		local meandep = string(`meandep', "%9.2f")
+		estadd local meandep = `"`meandep'\%"'
+		
+		eststo reg`i_var'_`i_con'
+		
+		
+	}
+}
+
+esttab reg* using beliefs_coneu.tex, replace 	keep(2.x 3.x 4.x 2.x#1.inter 3.x#1.inter 4.x#1.inter 1.inter) ///
+	coeflabels(2.x "\(T1\) - Risk" 3.x "\(T2\) - Econ" 4.x "\(T3\) - Combined" ///
+	2.x#1.inter "\(T1\) - Risk \(*\) Contact in the EU" 3.x#1.inter "\(T2\) - Econ \(*\) Contact in the EU" 4.x#1.inter "\(T3\) - Combined \(*\) Contact in the EU" ///
+	1.inter "Contact in the EU" strata "Big school")   se substitute(\_ _) ///
+	nomtitles nonumbers ///
+	stats(space individual school N meandep, fmt( s s s 0 3) ///
+	layout("\multicolumn{1}{c}{@}" "\multicolumn{1}{c}{@}" "\multicolumn{1}{c}{@}")  ///
+	labels(`" "'  `"Individual controls"' `"School controls"' `"\(N\)"'  `"Mean dep. var. control"')) ///
+	starlevels(\sym{*} 0.1 \sym{**} 0.05 \sym{***} 0.01) ///
+	postfoot("\hline\hline \end{tabular}") 		prehead("\begin{tabular}{l*{5}{c}} \hline\hline  &\multicolumn{6}{c}{y = intends to migrate at baseline} \\             &\multicolumn{1}{c}{(1)}&\multicolumn{1}{c}{(2)}&\multicolumn{1}{c}{(3)}&\multicolumn{1}{c}{(4)}&\multicolumn{1}{c}{(5)}&\multicolumn{1}{c}{(6)}  \\ \cmidrule(lr){2-7} & \multicolumn{2}{c}{   \Shortstack{1em}{Wishes to \\  migrate}   }&\multicolumn{2}{c}{\Shortstack{1em}{Plans to \\  migrate}}  \\  ")
+
+	
+drop x inter
+
+
 
 
 
@@ -12651,8 +12805,120 @@ esttab reg* using table_talkcontact.tex, replace  keep(2.x 3.x 4.x 1.y) ///
 	postfoot("\hline\hline \end{tabular}")
 
 	
+	*/ */ */
 	
+		
+*MIGRATION INTENTIONS VISA FU1 (restricted sample)
+
+
+eststo clear
+		
+local outcomes "desvisa planvisa askedvisa"
+foreach var of varlist `outcomes' {
+	forval i_con = 1/3 {
+		
+		if `i_con' == 2 {
+			local controls  `demographics'
+		}
+		if `i_con' == 3 {
+			local controls `demographics' `school_char'
+		}
+		
+		gen x = treated
+		gen y = `var'
+		qui reg f1.y x strata `controls'  y ///
+			if time == 0 & attended_tr != ., cluster(schoolid)
+		
+		drop x
+		drop y
+					
+		eststo reg`var'_`i_con'
+
+		
+	}
+}
+
+esttab reg* using apptable9a.tex, replace keep(x) ///
+	coeflabels(x "Any treatment")   se substitute(\_ _) ///
+	mtitles("ITT" "ITT" "ITT" "ITT" "ITT" "ITT" "ITT" "ITT" "ITT") ///
+	starlevels(\sym{*} 0.1 \sym{**} 0.05 \sym{***} 0.01) ///
+	prehead("{ \def\sym#1{\ifmmode^{#1}\else\(^{#1}\)\fi} \begin{tabular}{l*{9}{c}} \hline\hline  &\multicolumn{9}{c}{y = intending to migrate from Guinea} \\            &\multicolumn{1}{c}{(1)}&\multicolumn{1}{c}{(2)}&\multicolumn{1}{c}{(3)}&\multicolumn{1}{c}{(4)}&\multicolumn{1}{c}{(5)}&\multicolumn{1}{c}{(6)}&\multicolumn{1}{c}{(7)}&\multicolumn{1}{c}{(8)}&\multicolumn{1}{c}{(9)} \\ \cmidrule(lr){2-10} &    \multicolumn{3}{c}{  \Shortstack{1em}{Wishing to migrate}}&\multicolumn{3}{c}{\Shortstack{1em}{Planning to migrate}}&\multicolumn{3}{c}{\Shortstack{1em}{Preparing to migrate}}  \\  \cmidrule(lr){2-4} \cmidrule(lr){5-7} \cmidrule(lr){8-10}")  ///
+	nonumbers   noobs /// 
+	nobaselevels ///
+	posthead("\hline  \\ \textbf{\textit{Panel (a)}} & & &  &  &  & & & &  \\ [1em]") prefoot("\hline") postfoot(" ")  
+
+
 	
+eststo clear
+
+
+local outcomes "desvisa planvisa askedvisa"
+foreach var of varlist `outcomes' {
+	qui sum `var' if treatment_status == 1  & time == 2
+	local meandep = `r(mean)'
+	forval i_con = 1/3 {
+		
+		if `i_con' == 1 {
+			local controls ""
+			local individual "No"
+			local school "No"
+		}
+		
+		if `i_con' == 2 {
+			local controls  `demographics'
+			local individual "Yes"
+			local school "No"
+		}
+		if `i_con' == 3 {
+			local controls `demographics' `school_char'
+			local individual "Yes"
+			local school "Yes"
+		}
+		
+		gen x = treatment_status
+		gen y = `var'
+		qui reg f1.y i.x strata `controls'  y ///
+			if time == 0 & attended_tr != ., cluster(schoolid)
+		
+		test 2.x - 3.x = 0
+		local pre  = string(`r(p)', "%9.2f")
+		estadd local pre = `"`pre'"'
+
+		test 2.x - 4.x = 0
+		local prd = string(`r(p)', "%9.2f") 
+		estadd local prd = `"`prd'"'
+
+		test 3.x - 4.x = 0
+		local ped = string(`r(p)', "%9.2f")
+		estadd local ped = `"`ped'"'
+
+		drop x
+		drop y
+		
+		estadd local individual = "`individual'"
+		estadd local school = "`school'"
+		estadd local space = "` '"
+				
+		local meandep = string(`meandep', "%9.2f")
+		estadd local meandep = `"`meandep'\%"'
+		
+		eststo reg`var'_`i_con'
+
+		
+	}
+}
+
+esttab reg* using apptable9bvisa.tex, replace keep(2.x 3.x 4.x) ///
+	coeflabels(2.x "\(T1\) - Risk" 3.x "\(T2\) - Econ" 4.x "\(T3\) - Combined" /// 
+	y "Intends to migrate" strata "Big school")   se substitute(\_ _) ///
+	stats(pre prd ped space  N meandep, fmt(s s s s a2 a2) ///
+	labels(`"\emph{H0: \(T1\) = \(T2\) (p-value)}"' `"\emph{H0: \(T1\) = \(T3\) (p-value)}"' `"\emph{H0: \(T2\) = \(T3\) (p-value)}"'  `" "'  `"\(N\)"'  `"Mean dep. var. control"')) ///
+	starlevels(\sym{*} 0.1 \sym{**} 0.05 \sym{***} 0.01) ///
+	nonumbers nomtitles /// 
+	nobaselevels ///
+	prehead("") posthead("  \\ \textbf{\textit{Panel (b)}}  & & &  &  & & & &  \\ [1em]")    postfoot("\hline\hline \end{tabular}}") 
+
+stop
 		
 *MIGRATION INTENTIONS FU1 (restricted sample)
 
@@ -12694,6 +12960,7 @@ esttab reg* using apptable9a.tex, replace keep(x) ///
 	posthead("\hline  \\ \textbf{\textit{Panel (a)}} & & &  &  &  & & & &  \\ [1em]") prefoot("\hline") postfoot(" ")  
 
 
+	
 eststo clear
 
 
@@ -12765,7 +13032,7 @@ esttab reg* using apptable9b.tex, replace keep(2.x 3.x 4.x) ///
 
 
 	
-	
+	/* /*
 	
 	
 *DISCUSS MIG. AS AN OUTCOME (restricted sample)
@@ -19662,4 +19929,367 @@ esttab matrix(migint, fmt(%9.2f)) using apptable6.tex, style(tex) replace nomtit
 	
 	
 	
+*/
+	
+
+xtile quartecon = economic_index if time == 0, nq(4)
+mat R=J(12,6,.)
+
+local n = 0
+
+forval j=1/4 {
+	
+		local n = `n' + 1
+
+		eststo: reg f1.economic_index ib`j'.quarirrutil##i.treatment_status strata `demographics' `school_char'  economic_index ///
+			if time == 0 & attended_tr != . & f2.source_info_guinea < 6, cluster(schoolid)
+				
+	local n_treat 1
+	foreach X in i2.treatment_status i3.treatment_status i4.treatment_status  {
+		
+		local row = 4*(`n_treat'-1) + `n'
+		di `row'
+		mat R[`row',1]=_b[`X']
+		mat R[`row',2]=_b[`X']-1.96*_se[`X']
+		mat R[`row',3]=_b[`X']+1.96*_se[`X']
+		mat R[`row',4]=_b[`X']-1.645*_se[`X']
+		mat R[`row',5]=_b[`X']+1.645*_se[`X']
+		mat R[`row',6]=`row'
+		
+		local ++n_treat
+
+
+	}
+	
+}
+	
+
+
+preserve
+
+clear
+svmat R
+
+gen R7 = R6*2
+			
+la var R7 "PCA Econ Index"
+la var R1 "Effect"
+label define groups 5 "Risk" 13 "Econ" 21 "Combined" 
+label values R7 groups
+
+set scheme s2mono
+
+*fwer
+twoway (rcap R3 R2 R7, lw(vthin))	///
+ (rcap R5 R4 R7, lc(gs5))	, ///
+legend(off) xlabel(2 "1" 4 "2" 6 "3" 8 "4" ///
+10 "1" 12 "2" 14 "3" 16 "4" 18 "1" 20 "2" 22 "3" 24 "4", valuelabel) 	///
+graphregion(color(white)) ///
+ytitle(Treatment effect) ///
+xline(9, lpattern(-) lcolor(black)) 	///
+xline(17, lpattern(-) lcolor(black)) 	///
+yline(0, lpattern(solid) lcolor(black) lw(vthin)) 	///
+ylabel(-1.4(0.2)0.6) ///
+text(.5 5 "Risk") text(.5 13 "Econ") text(.5 21 "Combined")
+
+
+graph save Graph ${main}/Draft/figures/econ_quartile.gph, replace
+graph export ${main}/Draft/figures/econ_quartile.png , replace
+
+restore
+
+
+
+
+
+
+
+
+
+
+xtile quartrisk = mrisk_index if time == 0, nq(4)
+mat R=J(12,6,.)
+
+local n = 0
+
+forval j=1/4 {
+	
+		local n = `n' + 1
+
+		eststo: reg f1.mrisk_index ib`j'.quarirrutil##i.treatment_status strata `demographics' `school_char'  mrisk_index ///
+			if time == 0 & attended_tr != . & f2.source_info_guinea < 6, cluster(schoolid)
+				
+	local n_treat 1
+	foreach X in i2.treatment_status i3.treatment_status i4.treatment_status  {
+		
+		local row = 4*(`n_treat'-1) + `n'
+		di `row'
+		mat R[`row',1]=_b[`X']
+		mat R[`row',2]=_b[`X']-1.96*_se[`X']
+		mat R[`row',3]=_b[`X']+1.96*_se[`X']
+		mat R[`row',4]=_b[`X']-1.645*_se[`X']
+		mat R[`row',5]=_b[`X']+1.645*_se[`X']
+		mat R[`row',6]=`row'
+		
+		local ++n_treat
+
+
+	}
+	
+}
+	
+
+
+preserve
+
+clear
+svmat R
+
+gen R7 = R6*2
+			
+la var R7 "PCA Risk Index"
+la var R1 "Effect"
+label define groups 5 "Risk" 13 "Econ" 21 "Combined" 
+label values R7 groups
+
+set scheme s2mono
+
+*fwer
+twoway (rcap R3 R2 R7, lw(vthin))	///
+ (rcap R5 R4 R7, lc(gs5))	, ///
+legend(off) xlabel(2 "1" 4 "2" 6 "3" 8 "4" ///
+10 "1" 12 "2" 14 "3" 16 "4" 18 "1" 20 "2" 22 "3" 24 "4", valuelabel) 	///
+graphregion(color(white)) ///
+ytitle(Treatment effect) ///
+xline(9, lpattern(-) lcolor(black)) 	///
+xline(17, lpattern(-) lcolor(black)) 	///
+yline(0, lpattern(solid) lcolor(black) lw(vthin)) 	///
+ylabel(-0.2(0.2)1.6) ///
+text(1.5 5 "Risk") text(1.5 13 "Econ") text(1.5 21 "Combined")
+
+
+graph save Graph ${main}/Draft/figures/risk_quartile.gph, replace
+graph export ${main}/Draft/figures/risk_quartile.png , replace
+
+restore
+
+
+
+
+
+gen irrutil_index = economic_index - mrisk_index
+
+xtile quarirrutil = irrutil_index if time == 0, nq(4)
+
+mat R=J(12,6,.)
+
+local n = 0
+
+forval j=1/4 {
+	
+		local n = `n' + 1
+
+		eststo: reg f1.plnning ib`j'.quarirrutil##i.treatment_status strata `demographics' `school_char'  planning ///
+			if time == 0 & attended_tr != . & f2.source_info_guinea < 6, cluster(schoolid)
+				
+	local n_treat 1
+	foreach X in i2.treatment_status i3.treatment_status i4.treatment_status  {
+		
+		local row = 4*(`n_treat'-1) + `n'
+		di `row'
+		mat R[`row',1]=_b[`X']
+		mat R[`row',2]=_b[`X']-1.96*_se[`X']
+		mat R[`row',3]=_b[`X']+1.96*_se[`X']
+		mat R[`row',4]=_b[`X']-1.645*_se[`X']
+		mat R[`row',5]=_b[`X']+1.645*_se[`X']
+		mat R[`row',6]=`row'
+		
+		local ++n_treat
+
+
+	}
+	
+}
+	
+
+
+preserve
+
+clear
+svmat R
+
+gen R7 = R6*2
+			
+la var R7 "PCA Irr. Migration Index Quartile"
+la var R1 "Effect"
+label define groups 5 "Risk" 13 "Econ" 21 "Combined" 
+label values R7 groups
+
+set scheme s2mono
+
+*fwer
+twoway (rcap R3 R2 R7, lw(vthin))	///
+ (rcap R5 R4 R7, lc(gs5))	, ///
+legend(off) xlabel(2 "1" 4 "2" 6 "3" 8 "4" ///
+10 "1" 12 "2" 14 "3" 16 "4" 18 "1" 20 "2" 22 "3" 24 "4", valuelabel) 	///
+graphregion(color(white)) ///
+ytitle(Treatment effect) ///
+xline(9, lpattern(-) lcolor(black)) 	///
+xline(17, lpattern(-) lcolor(black)) 	///
+yline(0, lpattern(solid) lcolor(black) lw(vthin)) 	///
+ylabel(-0.16(0.04)0.16) ///
+text(.15 5 "Risk") text(.15 13 "Econ") text(.15 21 "Combined")
+
+
+graph save Graph ${main}/Draft/figures/planirrutil_quartile.gph, replace
+graph export ${main}/Draft/figures/planirrutil_quartile.png , replace
+
+restore
+
+
+
+
+mat R=J(12,6,.)
+
+local n = 0
+
+forval j=1/4 {
+	
+		local n = `n' + 1
+
+		eststo: reg f1.desire ib`j'.quarirrutil##i.treatment_status strata `demographics' `school_char'  desire ///
+			if time == 0 & attended_tr != . & f2.source_info_guinea < 6, cluster(schoolid)
+				
+	local n_treat 1
+	foreach X in i2.treatment_status i3.treatment_status i4.treatment_status  {
+		
+		local row = 4*(`n_treat'-1) + `n'
+		di `row'
+		mat R[`row',1]=_b[`X']
+		mat R[`row',2]=_b[`X']-1.96*_se[`X']
+		mat R[`row',3]=_b[`X']+1.96*_se[`X']
+		mat R[`row',4]=_b[`X']-1.645*_se[`X']
+		mat R[`row',5]=_b[`X']+1.645*_se[`X']
+		mat R[`row',6]=`row'
+		
+		local ++n_treat
+
+
+	}
+	
+}
+	
+
+
+preserve
+
+clear
+svmat R
+
+gen R7 = R6*2
+			
+la var R7 "PCA Irr. Migration Index Quartile"
+la var R1 "Effect"
+label define groups 5 "Risk" 13 "Econ" 21 "Combined" 
+label values R7 groups
+
+set scheme s2mono
+
+*fwer
+twoway (rcap R3 R2 R7, lw(vthin))	///
+ (rcap R5 R4 R7, lc(gs5))	, ///
+legend(off) xlabel(2 "1" 4 "2" 6 "3" 8 "4" ///
+10 "1" 12 "2" 14 "3" 16 "4" 18 "1" 20 "2" 22 "3" 24 "4", valuelabel) 	///
+graphregion(color(white)) ///
+ytitle(Treatment effect) ///
+xline(9, lpattern(-) lcolor(black)) 	///
+xline(17, lpattern(-) lcolor(black)) 	///
+yline(0, lpattern(solid) lcolor(black) lw(vthin)) 	///
+ylabel(-0.16(0.04)0.12) ///
+text(.1 5 "Risk") text(.1 13 "Econ") text(.1 21 "Combined")
+
+
+graph save Graph ${main}/Draft/figures/desirrutil_quartile.gph, replace
+graph export ${main}/Draft/figures/desirrutil_quartile.png , replace
+
+restore
+
+
+
+
+mat R=J(12,6,.)
+
+local n = 0
+
+forval j=1/4 {
+	
+		local n = `n' + 1
+
+		eststo: reg f1.prepare ib`j'.quarirrutil##i.treatment_status strata `demographics' `school_char'  prepare ///
+			if time == 0 & attended_tr != . & f2.source_info_guinea < 6, cluster(schoolid)
+				
+	local n_treat 1
+	foreach X in i2.treatment_status i3.treatment_status i4.treatment_status  {
+		
+		local row = 4*(`n_treat'-1) + `n'
+		di `row'
+		mat R[`row',1]=_b[`X']
+		mat R[`row',2]=_b[`X']-1.96*_se[`X']
+		mat R[`row',3]=_b[`X']+1.96*_se[`X']
+		mat R[`row',4]=_b[`X']-1.645*_se[`X']
+		mat R[`row',5]=_b[`X']+1.645*_se[`X']
+		mat R[`row',6]=`row'
+		
+		local ++n_treat
+
+
+	}
+	
+}
+	
+
+
+preserve
+
+clear
+svmat R
+
+gen R7 = R6*2
+			
+la var R7 "PCA Irr. Migration Index Quartile"
+la var R1 "Effect"
+label define groups 5 "Risk" 13 "Econ" 21 "Combined" 
+label values R7 groups
+
+set scheme s2mono
+
+*fwer
+twoway (rcap R3 R2 R7, lw(vthin))	///
+ (rcap R5 R4 R7, lc(gs5))	, ///
+legend(off) xlabel(2 "1" 4 "2" 6 "3" 8 "4" ///
+10 "1" 12 "2" 14 "3" 16 "4" 18 "1" 20 "2" 22 "3" 24 "4", valuelabel) 	///
+graphregion(color(white)) ///
+ytitle(Treatment effect) ///
+xline(9, lpattern(-) lcolor(black)) 	///
+xline(17, lpattern(-) lcolor(black)) 	///
+yline(0, lpattern(solid) lcolor(black) lw(vthin)) 	///
+ylabel(-0.08(0.02)0.06) ///
+text(.05 5 "Risk") text(.05 13 "Econ") text(.05 21 "Combined")
+
+
+graph save Graph ${main}/Draft/figures/prepirrutil_quartile.gph, replace
+graph export ${main}/Draft/figures/prepirrutil_quartile.png , replace
+
+restore
+
+
+
+
+
+
+
+
+
+
+
 
