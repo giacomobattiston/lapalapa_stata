@@ -19932,6 +19932,9 @@ esttab matrix(migint, fmt(%9.2f)) using apptable6.tex, style(tex) replace nomtit
 */
 	
 
+local demographics "grade6 grade7 female fath_alive moth_alive fath_educ2 fath_educ3 fath_educ4 fath_educ5 moth_educ2 moth_educ3 moth_educ4 moth_educ5 fath_working moth_working sister_no_win brother_no_win durablesnomiss durablesmiss"
+local school_char  "fees50 ratio_female_lycee rstudteach rstudclass"
+
 xtile quartecon = economic_index if time == 0, nq(4)
 mat R=J(12,6,.)
 
@@ -19941,7 +19944,7 @@ forval j=1/4 {
 	
 		local n = `n' + 1
 
-		eststo: reg f1.economic_index ib`j'.quarirrutil##i.treatment_status strata `demographics' `school_char'  economic_index ///
+		eststo: reg f1.economic_index ib`j'.quartecon##i.treatment_status strata `demographics' `school_char'  economic_index ///
 			if time == 0 & attended_tr != . & f2.source_info_guinea < 6, cluster(schoolid)
 				
 	local n_treat 1
@@ -20016,7 +20019,7 @@ forval j=1/4 {
 	
 		local n = `n' + 1
 
-		eststo: reg f1.mrisk_index ib`j'.quarirrutil##i.treatment_status strata `demographics' `school_char'  mrisk_index ///
+		eststo: reg f1.mrisk_index ib`j'.quartrisk##i.treatment_status strata `demographics' `school_char'  mrisk_index ///
 			if time == 0 & attended_tr != . & f2.source_info_guinea < 6, cluster(schoolid)
 				
 	local n_treat 1
@@ -20089,7 +20092,7 @@ forval j=1/4 {
 	
 		local n = `n' + 1
 
-		eststo: reg f1.plnning ib`j'.quarirrutil##i.treatment_status strata `demographics' `school_char'  planning ///
+		eststo: reg f1.planning ib`j'.quarirrutil##i.treatment_status strata `demographics' `school_char'  planning ///
 			if time == 0 & attended_tr != . & f2.source_info_guinea < 6, cluster(schoolid)
 				
 	local n_treat 1
@@ -20273,7 +20276,7 @@ ytitle(Treatment effect) ///
 xline(9, lpattern(-) lcolor(black)) 	///
 xline(17, lpattern(-) lcolor(black)) 	///
 yline(0, lpattern(solid) lcolor(black) lw(vthin)) 	///
-ylabel(-0.08(0.02)0.06) ///
+ylabel(-0.06(0.02)0.06) ///
 text(.05 5 "Risk") text(.05 13 "Econ") text(.05 21 "Combined")
 
 
@@ -20293,3 +20296,649 @@ restore
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+xtile quartecon = economic_index if time == 0, nq(4)
+xtile quartrisk = mrisk_index if time == 0, nq(4)
+
+
+
+local demographics "grade6 grade7 female fath_alive moth_alive fath_educ2 fath_educ3 fath_educ4 fath_educ5 moth_educ2 moth_educ3 moth_educ4 moth_educ5 fath_working moth_working sister_no_win brother_no_win durablesnomiss durablesmiss"
+local school_char  "fees50 ratio_female_lycee rstudteach rstudclass"
+
+mat Rrisk=J(9,6,.)
+mat Recon=J(9,6,.)
+
+local n = 0
+
+
+eststo: reg f1.economic_index i.quartecon##i.treatment_status i.quartrisk##i.treatment_status  strata `demographics' `school_char'  economic_index ///
+			if time == 0 & attended_tr != . & f2.source_info_guinea < 6, cluster(schoolid)
+
+forval q=2/4 {
+	local n = `q' - 1
+
+				
+	forval t=2/4 {
+		
+		local Xrisk i`t'.treatment_status#i`q'.quartrisk
+		
+		local row = 3*(`t'-2) + `n'
+		
+		mat Rrisk[`row',1]=_b[`Xrisk']
+		mat Rrisk[`row',2]=_b[`Xrisk']-1.96*_se[`Xrisk']
+		mat Rrisk[`row',3]=_b[`Xrisk']+1.96*_se[`Xrisk']
+		mat Rrisk[`row',4]=_b[`Xrisk']-1.645*_se[`Xrisk']
+		mat Rrisk[`row',5]=_b[`Xrisk']+1.645*_se[`Xrisk']
+		mat Rrisk[`row',6]=`row'
+		
+		local Xecon i`t'.treatment_status#i`q'.quartecon
+		
+		mat Recon[`row',1]=_b[`Xecon']
+		mat Recon[`row',2]=_b[`Xecon']-1.96*_se[`Xecon']
+		mat Recon[`row',3]=_b[`Xecon']+1.96*_se[`Xecon']
+		mat Recon[`row',4]=_b[`Xecon']-1.645*_se[`Xecon']
+		mat Recon[`row',5]=_b[`Xecon']+1.645*_se[`Xecon']
+		mat Recon[`row',6]=`row'
+		
+}
+	
+}
+	
+
+
+preserve
+
+clear
+matrix R = Recon
+svmat R
+
+gen R7 = R6*2
+			
+la var R7 "Treatment Effect X PCA Econ Index"
+la var R1 "Effect"
+label define groups 5 "Risk" 13 "Econ" 21 "Combined" 
+label values R7 groups
+
+set scheme s2mono
+
+*fwer
+twoway (rcap R3 R2 R7, lw(vthin))	///
+ (rcap R5 R4 R7, lc(gs5))	, ///
+legend(off) xlabel(2 "2" 4 "3" 6 "4" 8 "2" ///
+10 "3" 12 "4" 14 "2" 16 "3" 18 "4", valuelabel) 	///
+graphregion(color(white)) ///
+ytitle(Treatment effect) ///
+xline(7, lpattern(-) lcolor(black)) 	///
+xline(13, lpattern(-) lcolor(black)) 	///
+yline(0, lpattern(solid) lcolor(black) lw(vthin)) 	///
+ylabel(-1.4(0.2)0.6) ///
+text(.5 4 "Risk") text(.5 10 "Econ") text(.5 16 "Combined")
+
+
+graph save Graph ${main}/Draft/figures/econb_econq.gph, replace
+graph export ${main}/Draft/figures/econb_econq.png , replace
+
+restore
+
+
+
+
+preserve
+
+clear
+matrix R = Rrisk
+svmat R
+
+gen R7 = R6*2
+			
+la var R7 "Treatment Effect X PCA Risk Index"
+la var R1 "Effect"
+label define groups 5 "Risk" 13 "Econ" 21 "Combined" 
+label values R7 groups
+
+set scheme s2mono
+
+*fwer
+twoway (rcap R3 R2 R7, lw(vthin))	///
+ (rcap R5 R4 R7, lc(gs5))	, ///
+legend(off) xlabel(2 "2" 4 "3" 6 "4" 8 "2" ///
+10 "3" 12 "4" 14 "2" 16 "3" 18 "4", valuelabel) 	///
+graphregion(color(white)) ///
+ytitle(Treatment effect) ///
+xline(7, lpattern(-) lcolor(black)) 	///
+xline(13, lpattern(-) lcolor(black)) 	///
+yline(0, lpattern(solid) lcolor(black) lw(vthin)) 	///
+ylabel(-.8(0.2)1) ///
+text(.9 4 "Risk") text(.9 10 "Econ") text(.9 16 "Combined")
+
+
+graph save Graph ${main}/Draft/figures/econb_riskq.gph, replace
+graph export ${main}/Draft/figures/econb_riskq.png , replace
+
+restore
+
+
+
+
+
+
+
+
+local demographics "grade6 grade7 female fath_alive moth_alive fath_educ2 fath_educ3 fath_educ4 fath_educ5 moth_educ2 moth_educ3 moth_educ4 moth_educ5 fath_working moth_working sister_no_win brother_no_win durablesnomiss durablesmiss"
+local school_char  "fees50 ratio_female_lycee rstudteach rstudclass"
+
+mat Rrisk=J(9,6,.)
+mat Recon=J(9,6,.)
+
+local n = 0
+
+
+eststo: reg f1.mrisk_index i.quartecon##i.treatment_status i.quartrisk##i.treatment_status  strata `demographics' `school_char'  mrisk_index ///
+			if time == 0 & attended_tr != . & f2.source_info_guinea < 6, cluster(schoolid)
+
+forval q=2/4 {
+	local n = `q' - 1
+
+				
+	forval t=2/4 {
+		
+		local Xrisk i`t'.treatment_status#i`q'.quartrisk
+		
+		local row = 3*(`t'-2) + `n'
+		
+		mat Rrisk[`row',1]=_b[`Xrisk']
+		mat Rrisk[`row',2]=_b[`Xrisk']-1.96*_se[`Xrisk']
+		mat Rrisk[`row',3]=_b[`Xrisk']+1.96*_se[`Xrisk']
+		mat Rrisk[`row',4]=_b[`Xrisk']-1.645*_se[`Xrisk']
+		mat Rrisk[`row',5]=_b[`Xrisk']+1.645*_se[`Xrisk']
+		mat Rrisk[`row',6]=`row'
+		
+		local Xecon i`t'.treatment_status#i`q'.quartecon
+		
+		mat Recon[`row',1]=_b[`Xecon']
+		mat Recon[`row',2]=_b[`Xecon']-1.96*_se[`Xecon']
+		mat Recon[`row',3]=_b[`Xecon']+1.96*_se[`Xecon']
+		mat Recon[`row',4]=_b[`Xecon']-1.645*_se[`Xecon']
+		mat Recon[`row',5]=_b[`Xecon']+1.645*_se[`Xecon']
+		mat Recon[`row',6]=`row'
+		
+}
+	
+}
+	
+
+
+preserve
+
+clear
+matrix R = Recon
+svmat R
+
+gen R7 = R6*2
+			
+la var R7 "Treatment Effect X PCA Econ Index"
+la var R1 "Effect"
+label define groups 5 "Risk" 13 "Econ" 21 "Combined" 
+label values R7 groups
+
+set scheme s2mono
+
+*fwer
+twoway (rcap R3 R2 R7, lw(vthin))	///
+ (rcap R5 R4 R7, lc(gs5))	, ///
+legend(off) xlabel(2 "2" 4 "3" 6 "4" 8 "2" ///
+10 "3" 12 "4" 14 "2" 16 "3" 18 "4", valuelabel) 	///
+graphregion(color(white)) ///
+ytitle(Treatment effect) ///
+xline(7, lpattern(-) lcolor(black)) 	///
+xline(13, lpattern(-) lcolor(black)) 	///
+yline(0, lpattern(solid) lcolor(black) lw(vthin)) 	///
+ylabel(-.6(0.2)0.8) ///
+text(.7 4 "Risk") text(.7 10 "Econ") text(.7 16 "Combined")
+
+
+graph save Graph ${main}/Draft/figures/riskb_econq.gph, replace
+graph export ${main}/Draft/figures/riskb_econq.png , replace
+
+restore
+
+
+
+
+preserve
+
+clear
+matrix R = Rrisk
+svmat R
+
+gen R7 = R6*2
+			
+la var R7 "Treatment Effect X PCA Risk Index"
+la var R1 "Effect"
+label define groups 5 "Risk" 13 "Econ" 21 "Combined" 
+label values R7 groups
+
+set scheme s2mono
+
+*fwer
+twoway (rcap R3 R2 R7, lw(vthin))	///
+ (rcap R5 R4 R7, lc(gs5))	, ///
+legend(off) xlabel(2 "2" 4 "3" 6 "4" 8 "2" ///
+10 "3" 12 "4" 14 "2" 16 "3" 18 "4", valuelabel) 	///
+graphregion(color(white)) ///
+ytitle(Treatment effect) ///
+xline(7, lpattern(-) lcolor(black)) 	///
+xline(13, lpattern(-) lcolor(black)) 	///
+yline(0, lpattern(solid) lcolor(black) lw(vthin)) 	///
+ylabel(-.6(0.2)1) ///
+text(.9 4 "Risk") text(.9 10 "Econ") text(.9 16 "Combined")
+
+
+graph save Graph ${main}/Draft/figures/riskb_riskq.gph, replace
+graph export ${main}/Draft/figures/riskb_riskq.png , replace
+
+restore
+
+
+
+
+
+
+
+
+
+local demographics "grade6 grade7 female fath_alive moth_alive fath_educ2 fath_educ3 fath_educ4 fath_educ5 moth_educ2 moth_educ3 moth_educ4 moth_educ5 fath_working moth_working sister_no_win brother_no_win durablesnomiss durablesmiss"
+local school_char  "fees50 ratio_female_lycee rstudteach rstudclass"
+
+mat Rrisk=J(9,6,.)
+mat Recon=J(9,6,.)
+
+local n = 0
+
+
+eststo: reg f1.desire i.quartecon##i.treatment_status i.quartrisk##i.treatment_status  strata `demographics' `school_char'  desire ///
+			if time == 0 & attended_tr != . & f2.source_info_guinea < 6, cluster(schoolid)
+
+forval q=2/4 {
+	local n = `q' - 1
+
+				
+	forval t=2/4 {
+		
+		local Xrisk i`t'.treatment_status#i`q'.quartrisk
+		
+		local row = 3*(`t'-2) + `n'
+		
+		mat Rrisk[`row',1]=_b[`Xrisk']
+		mat Rrisk[`row',2]=_b[`Xrisk']-1.96*_se[`Xrisk']
+		mat Rrisk[`row',3]=_b[`Xrisk']+1.96*_se[`Xrisk']
+		mat Rrisk[`row',4]=_b[`Xrisk']-1.645*_se[`Xrisk']
+		mat Rrisk[`row',5]=_b[`Xrisk']+1.645*_se[`Xrisk']
+		mat Rrisk[`row',6]=`row'
+		
+		local Xecon i`t'.treatment_status#i`q'.quartecon
+		
+		mat Recon[`row',1]=_b[`Xecon']
+		mat Recon[`row',2]=_b[`Xecon']-1.96*_se[`Xecon']
+		mat Recon[`row',3]=_b[`Xecon']+1.96*_se[`Xecon']
+		mat Recon[`row',4]=_b[`Xecon']-1.645*_se[`Xecon']
+		mat Recon[`row',5]=_b[`Xecon']+1.645*_se[`Xecon']
+		mat Recon[`row',6]=`row'
+		
+}
+	
+}
+	
+
+
+preserve
+
+clear
+matrix R = Recon
+svmat R
+
+gen R7 = R6*2
+			
+la var R7 "Treatment Effect X PCA Econ Index"
+la var R1 "Effect"
+label define groups 5 "Risk" 13 "Econ" 21 "Combined" 
+label values R7 groups
+
+set scheme s2mono
+
+*fwer
+twoway (rcap R3 R2 R7, lw(vthin))	///
+ (rcap R5 R4 R7, lc(gs5))	, ///
+legend(off) xlabel(2 "2" 4 "3" 6 "4" 8 "2" ///
+10 "3" 12 "4" 14 "2" 16 "3" 18 "4", valuelabel) 	///
+graphregion(color(white)) ///
+ytitle(Treatment effect) ///
+xline(7, lpattern(-) lcolor(black)) 	///
+xline(13, lpattern(-) lcolor(black)) 	///
+yline(0, lpattern(solid) lcolor(black) lw(vthin)) 	///
+ylabel(-.25(0.05).15) ///
+text(.125 4 "Risk") text(.125 10 "Econ") text(.125 16 "Combined")
+
+
+graph save Graph ${main}/Draft/figures/desire_econq.gph, replace
+graph export ${main}/Draft/figures/desire_econq.png , replace
+
+restore
+
+
+
+
+preserve
+
+clear
+matrix R = Rrisk
+svmat R
+
+gen R7 = R6*2
+			
+la var R7 "Treatment Effect X PCA Risk Index"
+la var R1 "Effect"
+label define groups 5 "Risk" 13 "Econ" 21 "Combined" 
+label values R7 groups
+
+set scheme s2mono
+
+*fwer
+twoway (rcap R3 R2 R7, lw(vthin))	///
+ (rcap R5 R4 R7, lc(gs5))	, ///
+legend(off) xlabel(2 "2" 4 "3" 6 "4" 8 "2" ///
+10 "3" 12 "4" 14 "2" 16 "3" 18 "4", valuelabel) 	///
+graphregion(color(white)) ///
+ytitle(Treatment effect) ///
+xline(7, lpattern(-) lcolor(black)) 	///
+xline(13, lpattern(-) lcolor(black)) 	///
+yline(0, lpattern(solid) lcolor(black) lw(vthin)) 	///
+ylabel(-.1(0.05).25) ///
+text(.225 4 "Risk") text(.225 10 "Econ") text(.225 16 "Combined")
+
+
+graph save Graph ${main}/Draft/figures/desire_riskq.gph, replace
+graph export ${main}/Draft/figures/desire_riskq.png , replace
+
+restore
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+local demographics "grade6 grade7 female fath_alive moth_alive fath_educ2 fath_educ3 fath_educ4 fath_educ5 moth_educ2 moth_educ3 moth_educ4 moth_educ5 fath_working moth_working sister_no_win brother_no_win durablesnomiss durablesmiss"
+local school_char  "fees50 ratio_female_lycee rstudteach rstudclass"
+
+mat Rrisk=J(9,6,.)
+mat Recon=J(9,6,.)
+
+local n = 0
+
+
+eststo: reg f1.planning i.quartecon##i.treatment_status i.quartrisk##i.treatment_status  strata `demographics' `school_char'  planning ///
+			if time == 0 & attended_tr != . & f2.source_info_guinea < 6, cluster(schoolid)
+
+forval q=2/4 {
+	local n = `q' - 1
+
+				
+	forval t=2/4 {
+		
+		local Xrisk i`t'.treatment_status#i`q'.quartrisk
+		
+		local row = 3*(`t'-2) + `n'
+		
+		mat Rrisk[`row',1]=_b[`Xrisk']
+		mat Rrisk[`row',2]=_b[`Xrisk']-1.96*_se[`Xrisk']
+		mat Rrisk[`row',3]=_b[`Xrisk']+1.96*_se[`Xrisk']
+		mat Rrisk[`row',4]=_b[`Xrisk']-1.645*_se[`Xrisk']
+		mat Rrisk[`row',5]=_b[`Xrisk']+1.645*_se[`Xrisk']
+		mat Rrisk[`row',6]=`row'
+		
+		local Xecon i`t'.treatment_status#i`q'.quartecon
+		
+		mat Recon[`row',1]=_b[`Xecon']
+		mat Recon[`row',2]=_b[`Xecon']-1.96*_se[`Xecon']
+		mat Recon[`row',3]=_b[`Xecon']+1.96*_se[`Xecon']
+		mat Recon[`row',4]=_b[`Xecon']-1.645*_se[`Xecon']
+		mat Recon[`row',5]=_b[`Xecon']+1.645*_se[`Xecon']
+		mat Recon[`row',6]=`row'
+		
+}
+	
+}
+	
+
+
+preserve
+
+clear
+matrix R = Recon
+svmat R
+
+gen R7 = R6*2
+			
+la var R7 "Treatment Effect X PCA Econ Index"
+la var R1 "Effect"
+label define groups 5 "Risk" 13 "Econ" 21 "Combined" 
+label values R7 groups
+
+set scheme s2mono
+
+*fwer
+twoway (rcap R3 R2 R7, lw(vthin))	///
+ (rcap R5 R4 R7, lc(gs5))	, ///
+legend(off) xlabel(2 "2" 4 "3" 6 "4" 8 "2" ///
+10 "3" 12 "4" 14 "2" 16 "3" 18 "4", valuelabel) 	///
+graphregion(color(white)) ///
+ytitle(Treatment effect) ///
+xline(7, lpattern(-) lcolor(black)) 	///
+xline(13, lpattern(-) lcolor(black)) 	///
+yline(0, lpattern(solid) lcolor(black) lw(vthin)) 	///
+ylabel(-.15(0.05).15) ///
+text(.125 4 "Risk") text(.125 10 "Econ") text(.125 16 "Combined")
+
+
+graph save Graph ${main}/Draft/figures/planning_econq.gph, replace
+graph export ${main}/Draft/figures/planning_econq.png , replace
+
+restore
+
+
+
+
+preserve
+
+clear
+matrix R = Rrisk
+svmat R
+
+gen R7 = R6*2
+			
+la var R7 "Treatment Effect X PCA Risk Index"
+la var R1 "Effect"
+label define groups 5 "Risk" 13 "Econ" 21 "Combined" 
+label values R7 groups
+
+set scheme s2mono
+
+*fwer
+twoway (rcap R3 R2 R7, lw(vthin))	///
+ (rcap R5 R4 R7, lc(gs5))	, ///
+legend(off) xlabel(2 "2" 4 "3" 6 "4" 8 "2" ///
+10 "3" 12 "4" 14 "2" 16 "3" 18 "4", valuelabel) 	///
+graphregion(color(white)) ///
+ytitle(Treatment effect) ///
+xline(7, lpattern(-) lcolor(black)) 	///
+xline(13, lpattern(-) lcolor(black)) 	///
+yline(0, lpattern(solid) lcolor(black) lw(vthin)) 	///
+ylabel(-.1(0.05).25) ///
+text(.225 4 "Risk") text(.225 10 "Econ") text(.225 16 "Combined")
+
+
+graph save Graph ${main}/Draft/figures/planning_riskq.gph, replace
+graph export ${main}/Draft/figures/planning_riskq.png , replace
+
+restore
+
+
+
+
+
+
+
+
+
+
+
+
+local demographics "grade6 grade7 female fath_alive moth_alive fath_educ2 fath_educ3 fath_educ4 fath_educ5 moth_educ2 moth_educ3 moth_educ4 moth_educ5 fath_working moth_working sister_no_win brother_no_win durablesnomiss durablesmiss"
+local school_char  "fees50 ratio_female_lycee rstudteach rstudclass"
+
+mat Rrisk=J(9,6,.)
+mat Recon=J(9,6,.)
+
+local n = 0
+
+
+eststo: reg f1.prepare i.quartecon##i.treatment_status i.quartrisk##i.treatment_status  strata `demographics' `school_char'  prepare ///
+			if time == 0 & attended_tr != . & f2.source_info_guinea < 6, cluster(schoolid)
+
+forval q=2/4 {
+	local n = `q' - 1
+
+				
+	forval t=2/4 {
+		
+		local Xrisk i`t'.treatment_status#i`q'.quartrisk
+		
+		local row = 3*(`t'-2) + `n'
+		
+		mat Rrisk[`row',1]=_b[`Xrisk']
+		mat Rrisk[`row',2]=_b[`Xrisk']-1.96*_se[`Xrisk']
+		mat Rrisk[`row',3]=_b[`Xrisk']+1.96*_se[`Xrisk']
+		mat Rrisk[`row',4]=_b[`Xrisk']-1.645*_se[`Xrisk']
+		mat Rrisk[`row',5]=_b[`Xrisk']+1.645*_se[`Xrisk']
+		mat Rrisk[`row',6]=`row'
+		
+		local Xecon i`t'.treatment_status#i`q'.quartecon
+		
+		mat Recon[`row',1]=_b[`Xecon']
+		mat Recon[`row',2]=_b[`Xecon']-1.96*_se[`Xecon']
+		mat Recon[`row',3]=_b[`Xecon']+1.96*_se[`Xecon']
+		mat Recon[`row',4]=_b[`Xecon']-1.645*_se[`Xecon']
+		mat Recon[`row',5]=_b[`Xecon']+1.645*_se[`Xecon']
+		mat Recon[`row',6]=`row'
+		
+}
+	
+}
+	
+
+
+preserve
+
+clear
+matrix R = Recon
+svmat R
+
+gen R7 = R6*2
+			
+la var R7 "Treatment Effect X PCA Econ Index"
+la var R1 "Effect"
+label define groups 5 "Risk" 13 "Econ" 21 "Combined" 
+label values R7 groups
+
+set scheme s2mono
+
+*fwer
+twoway (rcap R3 R2 R7, lw(vthin))	///
+ (rcap R5 R4 R7, lc(gs5))	, ///
+legend(off) xlabel(2 "2" 4 "3" 6 "4" 8 "2" ///
+10 "3" 12 "4" 14 "2" 16 "3" 18 "4", valuelabel) 	///
+graphregion(color(white)) ///
+ytitle(Treatment effect) ///
+xline(7, lpattern(-) lcolor(black)) 	///
+xline(13, lpattern(-) lcolor(black)) 	///
+yline(0, lpattern(solid) lcolor(black) lw(vthin)) 	///
+ylabel(-.15(0.05).15) ///
+text(.125 4 "Risk") text(.125 10 "Econ") text(.125 16 "Combined")
+
+
+graph save Graph ${main}/Draft/figures/prepare_econq.gph, replace
+graph export ${main}/Draft/figures/prepare_econq.png , replace
+
+restore
+
+
+
+
+preserve
+
+clear
+matrix R = Rrisk
+svmat R
+
+gen R7 = R6*2
+			
+la var R7 "Treatment Effect X PCA Risk Index"
+la var R1 "Effect"
+label define groups 5 "Risk" 13 "Econ" 21 "Combined" 
+label values R7 groups
+
+set scheme s2mono
+
+*fwer
+twoway (rcap R3 R2 R7, lw(vthin))	///
+ (rcap R5 R4 R7, lc(gs5))	, ///
+legend(off) xlabel(2 "2" 4 "3" 6 "4" 8 "2" ///
+10 "3" 12 "4" 14 "2" 16 "3" 18 "4", valuelabel) 	///
+graphregion(color(white)) ///
+ytitle(Treatment effect) ///
+xline(7, lpattern(-) lcolor(black)) 	///
+xline(13, lpattern(-) lcolor(black)) 	///
+yline(0, lpattern(solid) lcolor(black) lw(vthin)) 	///
+ylabel(-.1(0.05).25) ///
+text(.225 4 "Risk") text(.225 10 "Econ") text(.225 16 "Combined")
+
+
+graph save Graph ${main}/Draft/figures/prepare_riskq.gph, replace
+graph export ${main}/Draft/figures/prepare_riskq.png , replace
+
+res
