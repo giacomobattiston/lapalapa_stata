@@ -172,6 +172,69 @@ qui sum school_index_all if time == 0, detail
 gen school_index_allavg = school_index_all > `r(mean)' if !missing(school_index_all)
 label var school_index_allavg "Wealthy"
 
+
+
+
+forval i_dep = 1/3 {
+	forval i_con = 1/2 {
+		
+		if `i_dep' == 1 {
+			gen y = desire
+		}
+		
+		if `i_dep' == 2 {
+			gen y = planning
+		}
+		
+		if `i_dep' == 3 {
+			gen y = prepare
+		}
+		
+		if `i_con' == 1 {
+			local controls
+			local individual "No"
+			local school "No"
+
+		}
+		
+		
+		if `i_con' == 2 {
+			local controls `demographics' `school_char' strata
+			local individual "Yes"
+			local school "Yes"
+		}
+		
+		label values y y
+
+
+		reg y mrisk_index economic_index `controls'  if f2.source_info_guinea < 6  & attended_tr != . & time == 0, cluster(schoolid)
+		
+
+		estadd local space = " "
+		estadd local individual = "`individual'"
+		estadd local school = "`school'"
+		estadd local meandep = `"`meandep'\%"'
+		
+		drop y*
+		est sto reg`i_dep'_`i_con'
+	}
+}
+
+
+
+
+esttab reg* using migintcorrcont.tex,  replace label ///
+	starlevels(\sym{*} 0.1 \sym{**} 0.05 \sym{***} 0.01) noomitted ///
+	  nomtitles se   substitute(_ " ")  ///
+	prehead("\begin{tabular}{l*{7}{c}} \hline\hline  &\multicolumn{6}{c}{y = 0 No migr., 1 Regular Migration, 2 Irregular Migr.} \\             &\multicolumn{1}{c}{(1)}&\multicolumn{1}{c}{(2)}&\multicolumn{1}{c}{(3)}&\multicolumn{1}{c}{(4)}&\multicolumn{1}{c}{(5)}&\multicolumn{1}{c}{(6)}  \\ \cmidrule(lr){2-7} & \multicolumn{3}{c}{   \Shortstack{1em}{Regular status measured \\ by having a visa}   }&\multicolumn{3}{c}{\Shortstack{1em}{Regular status measured \\ by traveling w/ airplane}}  \\  ") nonumbers ///
+	stats(space individual school N meandepone, fmt(s s s 0 3) ///
+	layout( )  labels(`" "' `"Individual controls"' `"School controls"'  `"\(N\)"'  `"Mean control at basel."')) ///
+	postfoot("\hline\hline \end{tabular}") 
+
+
+stop
+	
+	
 /*
 
 
